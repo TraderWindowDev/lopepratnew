@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Lopeprat Coaching",
+    "slug": "lopeprat-coaching",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "lopeprat",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0E1C",
+    "splash": {
+      "backgroundColor": "#0B0E1C",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.lopeprat.coaching"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0E1C"
+      },
+      "package": "com.lopeprat.coaching"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
