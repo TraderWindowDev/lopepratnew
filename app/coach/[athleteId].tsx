@@ -125,9 +125,9 @@ export default function AthleteDetailScreen() {
   }
 
   const statusColor = STATUS_COLORS[athlete.status];
-  const daysUntilRace = Math.ceil(
-    (new Date(athlete.targetRace.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+  const daysUntilRace = athlete.targetRace.date
+    ? Math.ceil((new Date(athlete.targetRace.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   return (
     <View style={styles.container}>
@@ -197,26 +197,29 @@ export default function AthleteDetailScreen() {
             ))}
           </View>
 
-          {/* Target race */}
-          <Card style={styles.raceCard} padding={16}>
-            <View style={styles.raceHeader}>
-              <Ionicons name="flag" size={16} color={Colors.gold} />
-              <Text style={styles.raceTitle}>{athlete.targetRace.name}</Text>
-            </View>
-            <Text style={styles.raceMeta}>
-              {new Date(athlete.targetRace.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {athlete.targetRace.location}
-            </Text>
-            <View style={styles.raceCountdown}>
-              <View style={styles.raceCountItem}>
-                <Text style={styles.raceCountNum}>{Math.floor(daysUntilRace / 7)}</Text>
-                <Text style={styles.raceCountLabel}>weeks</Text>
+          {/* Target race — only shown when set */}
+          {athlete.targetRace.name && daysUntilRace !== null && (
+            <Card style={styles.raceCard} padding={16}>
+              <View style={styles.raceHeader}>
+                <Ionicons name="flag" size={16} color={Colors.gold} />
+                <Text style={styles.raceTitle}>{athlete.targetRace.name}</Text>
               </View>
-              <View style={styles.raceCountItem}>
-                <Text style={styles.raceCountNum}>{daysUntilRace % 7}</Text>
-                <Text style={styles.raceCountLabel}>days</Text>
+              <Text style={styles.raceMeta}>
+                {new Date(athlete.targetRace.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {athlete.targetRace.location ? ` · ${athlete.targetRace.location}` : ''}
+              </Text>
+              <View style={styles.raceCountdown}>
+                <View style={styles.raceCountItem}>
+                  <Text style={styles.raceCountNum}>{Math.floor(daysUntilRace / 7)}</Text>
+                  <Text style={styles.raceCountLabel}>weeks</Text>
+                </View>
+                <View style={styles.raceCountItem}>
+                  <Text style={styles.raceCountNum}>{daysUntilRace % 7}</Text>
+                  <Text style={styles.raceCountLabel}>days</Text>
+                </View>
               </View>
-            </View>
-          </Card>
+            </Card>
+          )}
 
           {/* Tab bar */}
           <View style={styles.tabs}>

@@ -118,6 +118,55 @@ export async function assignPlan(athleteId: string, planId: string) {
   if (error) throw error;
 }
 
+// Deep-copies a template plan then assigns the copy to the athlete,
+// so editing one athlete's plan never affects another athlete.
+export async function copyAndAssignPlan(athleteId: string, planId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('training_plans')
+    .select(`
+      name, description, total_weeks, target_goal,
+      plan_weeks (
+        week_index, phase, focus, total_km,
+        plan_days (
+          day_index, day_label, workout_type, title, km, notes, target_pace, coach_note
+        )
+      )
+    `)
+    .eq('id', planId)
+    .single();
+  if (error) throw error;
+
+  const planInput: PlanInput = {
+    name: data.name,
+    description: data.description ?? '',
+    totalWeeks: data.total_weeks,
+    targetGoal: data.target_goal ?? null,
+    weeks: (data.plan_weeks as any[])
+      .sort((a: any, b: any) => a.week_index - b.week_index)
+      .map((w: any) => ({
+        weekIndex: w.week_index,
+        phase: w.phase,
+        focus: w.focus ?? '',
+        totalKm: w.total_km,
+        days: (w.plan_days as any[])
+          .sort((a: any, b: any) => a.day_index - b.day_index)
+          .map((d: any) => ({
+            dayIndex: d.day_index,
+            dayLabel: d.day_label,
+            workoutType: d.workout_type,
+            title: d.title,
+            km: d.km ?? undefined,
+            notes: d.notes ?? undefined,
+            targetPace: d.target_pace ?? undefined,
+            coachNote: d.coach_note ?? undefined,
+          })),
+      })),
+  };
+
+  const newPlanId = await createPlan(planInput);
+  await assignPlan(athleteId, newPlanId);
+}
+
 export async function unassignPlan(athleteId: string) {
   const { error } = await supabase
     .from('athletes')

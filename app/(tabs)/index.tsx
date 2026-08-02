@@ -57,9 +57,9 @@ export default function HomeScreen() {
     .filter((w) => w.completed && w.actual)
     .reduce((sum, w) => sum + (w.actual?.distance ?? 0), 0);
 
-  const daysUntilRace = Math.ceil(
-    (new Date(athlete.targetRace.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysUntilRace = athlete.targetRace.date
+    ? Math.ceil((new Date(athlete.targetRace.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   const greeting = () => {
     const h = today.getHours();
@@ -240,40 +240,44 @@ export default function HomeScreen() {
             <Card style={styles.statCard} padding={16}>
               <View style={styles.streakDisplay}>
                 <Ionicons name="calendar-outline" size={20} color={Colors.gold} />
-                <Text style={[styles.streakNum, { color: Colors.gold }]}>{daysUntilRace}</Text>
+                <Text style={[styles.streakNum, { color: Colors.gold }]}>
+                  {daysUntilRace !== null ? daysUntilRace : '—'}
+                </Text>
               </View>
               <Text style={styles.statLabel}>Days to race</Text>
             </Card>
           </View>
 
-          {/* Race countdown */}
-          <Card style={styles.raceCard} padding={16}>
-            <View style={styles.raceHeader}>
-              <Ionicons name="flag" size={18} color={Colors.gold} />
-              <Text style={styles.raceTitle}>{athlete.targetRace.name}</Text>
-            </View>
-            <View style={styles.raceMeta}>
-              <Text style={styles.raceDate}>
-                {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Text style={styles.raceLocation}>{athlete.targetRace.location}</Text>
-            </View>
-            <View style={styles.raceCountdown}>
-              {[
-                { val: Math.floor(daysUntilRace / 7), label: 'weeks' },
-                { val: daysUntilRace % 7, label: 'days' },
-              ].map((item) => (
-                <View key={item.label} style={styles.raceCountdownItem}>
-                  <Text style={styles.raceCountNum}>{item.val}</Text>
-                  <Text style={styles.raceCountLabel}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          </Card>
+          {/* Race countdown — only shown when a race is set */}
+          {athlete.targetRace.name && daysUntilRace !== null && (
+            <Card style={styles.raceCard} padding={16}>
+              <View style={styles.raceHeader}>
+                <Ionicons name="flag" size={18} color={Colors.gold} />
+                <Text style={styles.raceTitle}>{athlete.targetRace.name}</Text>
+              </View>
+              <View style={styles.raceMeta}>
+                <Text style={styles.raceDate}>
+                  {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </Text>
+                <Text style={styles.raceLocation}>{athlete.targetRace.location}</Text>
+              </View>
+              <View style={styles.raceCountdown}>
+                {[
+                  { val: Math.floor(daysUntilRace / 7), label: 'weeks' },
+                  { val: daysUntilRace % 7, label: 'days' },
+                ].map((item) => (
+                  <View key={item.label} style={styles.raceCountdownItem}>
+                    <Text style={styles.raceCountNum}>{item.val}</Text>
+                    <Text style={styles.raceCountLabel}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          )}
 
           {/* Quick links */}
           <View style={styles.quickLinks}>

@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { GOAL_LABELS, type GoalType, type WorkoutType } from '@/constants/mock-data';
 import { createPlan, updatePlan, assignPlan } from '@/lib/api/plans';
 import { useStore } from '@/hooks/useStore';
+import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { WorkoutBuilderModal, type StructuredWorkout, type ActivityType } from '@/components/workout/WorkoutBuilderModal';
 
@@ -56,6 +59,39 @@ type WeekState = {
   days: DayState[];
 };
 
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function makeStep(stepType: 'warmup' | 'training' | 'rest' | 'cooldown', km?: string, pace?: string): any {
+  const hasKm = km && parseFloat(km) > 0;
+  return {
+    id: uid(),
+    stepType,
+    targetKind: hasKm ? 'distance' : 'time',
+    targetValue: hasKm ? `${km} km` : stepType === 'warmup' || stepType === 'cooldown' ? '10:00' : '20:00',
+    intensityKind: pace ? 'pace' : 'open',
+    intensityRange: pace || '—',
+  };
+}
+
+// Converts an AI-generated plain day into a StructuredWorkout so the builder pre-populates
+function dayToStructuredWorkout(day: DayState): StructuredWorkout | undefined {
+  if (!day.title || day.type === 'rest') return undefined;
+  const activityType: ActivityType = day.type === 'strength' ? 'strength' : 'run';
+  const km = day.km && parseFloat(day.km) > 0 ? day.km : undefined;
+  const pace = day.targetPace || undefined;
+
+  let steps: any[] = [];
+  if (day.type === 'tempo') {
+    const warmKm = km ? String(Math.max(1, Math.round(parseFloat(km) * 0.2))) : undefined;
+    const mainKm = km ? String(Math.round(parseFloat(km) * 0.6)) : undefined;
+    steps = [makeStep('warmup', warmKm), makeStep('training', mainKm, pace), makeStep('cooldown', warmKm)];
+  } else if (day.type !== 'strength') {
+    steps = [makeStep('training', km, pace)];
+  }
+
+  return { activityType, name: day.title, steps };
+}
+
 function makeDefaultDay(_i: number): DayState {
   return {
     type: 'rest',
@@ -86,6 +122,45 @@ export default function CreatePlanScreen() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // AI generation
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiNotes, setAiNotes] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setAiError('');
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('generate-plan', {
+        body: { goal, numWeeks, planName: name.trim(), athleteNotes: aiNotes.trim() },
+      });
+      if (fnErr) throw fnErr;
+      if (data?.error) throw new Error(data.error);
+
+      const generated: WeekState[] = (data.plan.weeks as any[]).map((w: any) => ({
+        phase: w.phase ?? '',
+        focus: w.focus ?? '',
+        days: (w.days as any[]).map((d: any) => ({
+          type: (d.type as WorkoutType) ?? 'rest',
+          title: d.title ?? '',
+          km: d.km != null ? String(d.km) : '',
+          notes: d.notes ?? '',
+          targetPace: d.targetPace ?? '',
+          coachNote: '',
+        })),
+      }));
+
+      setWeeks(generated);
+      setShowAIModal(false);
+      setStep(1);
+    } catch (e: any) {
+      setAiError(e.message ?? 'Generation failed — try again.');
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   // Plan meta — pre-populate from existing plan when editing
   const [name, setName] = useState(editPlan?.name ?? '');
@@ -254,8 +329,21 @@ export default function CreatePlanScreen() {
               onDescription={setDescription}
               onGoal={setGoal}
               onNumWeeks={setNumWeeks}
+              onGenerateAI={() => setShowAIModal(true)}
             />
           )}
+
+          <GenerateAIModal
+            visible={showAIModal}
+            goal={goal}
+            numWeeks={numWeeks}
+            notes={aiNotes}
+            onNotesChange={setAiNotes}
+            generating={generating}
+            error={aiError}
+            onGenerate={handleGenerate}
+            onClose={() => { setShowAIModal(false); setAiError(''); }}
+          />
 
           {step > 0 && step <= numWeeks && (
             <WeekStep
@@ -333,11 +421,12 @@ export default function CreatePlanScreen() {
 
 function MetaStep({
   name, description, goal, numWeeks, athlete,
-  onName, onDescription, onGoal, onNumWeeks,
+  onName, onDescription, onGoal, onNumWeeks, onGenerateAI,
 }: {
   name: string; description: string; goal: GoalType | null; numWeeks: number; athlete?: string;
   onName: (v: string) => void; onDescription: (v: string) => void;
   onGoal: (v: GoalType | null) => void; onNumWeeks: (v: number) => void;
+  onGenerateAI: () => void;
 }) {
   return (
     <View style={styles.metaContainer}>
@@ -417,7 +506,100 @@ function MetaStep({
           {numWeeks <= 4 ? 'Good for a focused block' : numWeeks <= 8 ? 'Standard training block' : numWeeks <= 16 ? 'Full marathon build' : 'Extended multi-cycle'}
         </Text>
       </View>
+
+      <TouchableOpacity style={styles.aiBtn} onPress={onGenerateAI} activeOpacity={0.8}>
+        <Ionicons name="sparkles" size={16} color={Colors.primary} />
+        <Text style={styles.aiBtnText}>Generate with AI</Text>
+      </TouchableOpacity>
     </View>
+  );
+}
+
+function GenerateAIModal({
+  visible, goal, numWeeks, notes, onNotesChange, generating, error, onGenerate, onClose,
+}: {
+  visible: boolean; goal: GoalType | null; numWeeks: number;
+  notes: string; onNotesChange: (v: string) => void;
+  generating: boolean; error: string;
+  onGenerate: () => void; onClose: () => void;
+}) {
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.aiModal}>
+          <LinearGradient colors={['#0D1117', Colors.background]} style={StyleSheet.absoluteFill} />
+
+          <View style={styles.aiModalHeader}>
+            <View style={styles.aiModalTitle}>
+              <Ionicons name="sparkles" size={20} color={Colors.primary} />
+              <Text style={styles.aiModalTitleText}>AI Plan Generator</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="close" size={22} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.aiModalSummary}>
+            <View style={styles.aiModalChip}>
+              <Text style={styles.aiModalChipText}>{numWeeks} weeks</Text>
+            </View>
+            {goal && (
+              <View style={styles.aiModalChip}>
+                <Text style={styles.aiModalChipText}>{GOAL_LABELS[goal]}</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.aiModalLabel}>Tell me about the athlete</Text>
+          <Text style={styles.aiModalHint}>
+            Injury history, available training days, current fitness, any specific requirements…
+          </Text>
+          <TextInput
+            style={styles.aiModalInput}
+            value={notes}
+            onChangeText={onNotesChange}
+            placeholder="e.g. Intermediate runner, 5 days/week, recovering from knee injury, targeting sub-4hr marathon"
+            placeholderTextColor={Colors.textMuted}
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
+            autoFocus
+          />
+
+          {error ? (
+            <View style={styles.aiModalError}>
+              <Ionicons name="alert-circle-outline" size={15} color={Colors.error} />
+              <Text style={styles.aiModalErrorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={[styles.aiGenerateBtn, generating && styles.aiGenerateBtnLoading]}
+            onPress={onGenerate}
+            disabled={generating}
+            activeOpacity={0.85}
+          >
+            {generating ? (
+              <>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.aiGenerateBtnText}>Generating…</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="sparkles" size={18} color="#fff" />
+                <Text style={styles.aiGenerateBtnText}>Generate Plan</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {generating && (
+            <Text style={styles.aiGeneratingNote}>
+              This takes 10–20 seconds. The AI will build all {numWeeks} weeks — you can edit anything after.
+            </Text>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -520,7 +702,9 @@ function DayRow({
 }) {
   const [showBuilder, setShowBuilder] = useState(false);
   const sw = day.structuredWorkout;
-  const accentColor = sw ? (ACTIVITY_COLORS[sw.activityType] ?? Colors.primary) : Colors.textMuted;
+  const typeColor = WORKOUT_TYPES.find((t) => t.value === day.type)?.color ?? Colors.textMuted;
+  const accentColor = sw ? (ACTIVITY_COLORS[sw.activityType] ?? Colors.primary) : typeColor;
+  const hasContent = sw || day.title;
 
   return (
     <>
@@ -543,6 +727,19 @@ function DayRow({
             </View>
             <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
           </View>
+        ) : hasContent ? (
+          <View style={styles.dayRowWorkout}>
+            <View style={[styles.dayRowAccent, { backgroundColor: accentColor }]} />
+            <View style={styles.dayRowInfo}>
+              <Text style={styles.dayRowTitle} numberOfLines={1}>{day.title}</Text>
+              <Text style={styles.dayRowMeta} numberOfLines={1}>
+                {day.km ? `${day.km} km` : ''}
+                {day.km && day.targetPace ? '  ·  ' : ''}
+                {day.targetPace || ''}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+          </View>
         ) : (
           <View style={styles.dayRowEmpty}>
             <Ionicons name="add" size={20} color={Colors.textMuted} />
@@ -553,7 +750,7 @@ function DayRow({
       {showBuilder && (
         <WorkoutBuilderModal
           visible={true}
-          initial={sw}
+          initial={sw ?? dayToStructuredWorkout(day)}
           onDismiss={() => setShowBuilder(false)}
           onSave={(w) => {
             setShowBuilder(false);
@@ -755,5 +952,86 @@ const styles = StyleSheet.create({
   },
   saveBtnLoading: { opacity: 0.6 },
   saveBtnText: { ...Font.body, color: '#fff', fontWeight: '700', fontSize: 16 },
+
+  // AI button on meta step
+  aiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary + '66',
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    backgroundColor: Colors.primaryFade,
+  },
+  aiBtnText: { ...Font.body, color: Colors.primary, fontWeight: '600' },
+
+  // AI generation modal
+  aiModal: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    padding: Spacing.lg,
+    paddingTop: 24,
+    gap: 14,
+  },
+  aiModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  aiModalTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aiModalTitleText: { ...Font.h3, color: Colors.text },
+  aiModalSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  aiModalChip: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  aiModalChipText: { ...Font.small, color: Colors.textSecondary },
+  aiModalLabel: { ...Font.label, color: Colors.text },
+  aiModalHint: { ...Font.small, color: Colors.textMuted, marginTop: -8 },
+  aiModalInput: {
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: 14,
+    color: Colors.text,
+    fontSize: 15,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  aiModalError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.error + '18',
+    borderRadius: Radius.sm,
+    padding: 10,
+  },
+  aiModalErrorText: { ...Font.small, color: Colors.error, flex: 1 },
+  aiGenerateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: 16,
+    marginTop: 4,
+  },
+  aiGenerateBtnLoading: { opacity: 0.7 },
+  aiGenerateBtnText: { ...Font.body, color: '#fff', fontWeight: '700' },
+  aiGeneratingNote: {
+    ...Font.small,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 
 });

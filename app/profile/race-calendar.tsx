@@ -52,14 +52,14 @@ function formatDate(dateStr: string): string {
 export default function RaceCalendarScreen() {
   const { athlete, setTargetRace, session } = useStore();
 
-  const defaultRaces: Race[] = [{
+  const defaultRaces: Race[] = athlete.targetRace.name ? [{
     id: 'target',
-    name: athlete.targetRace.name !== 'TBD' ? athlete.targetRace.name : 'Target Race',
+    name: athlete.targetRace.name,
     date: athlete.targetRace.date,
     distance: 'Marathon',
     location: athlete.targetRace.location || '',
     isTarget: true,
-  }];
+  }] : [];
 
   const [races, setRaces, loaded] = useStoredState<Race[]>('race_calendar', defaultRaces);
 

@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { GOAL_LABELS, type TrainingPlan, type GoalType } from '@/constants/mock-data';
-import { assignPlan } from '@/lib/api/plans';
+import { copyAndAssignPlan } from '@/lib/api/plans';
 import { Card } from '@/components/ui/Card';
 
 const GOAL_COLORS: Record<GoalType, string> = {
@@ -43,7 +43,7 @@ export default function PlansScreen() {
     setAssigning(plan.id);
     setAssignError('');
     try {
-      await assignPlan(assignTo, plan.id);
+      await copyAndAssignPlan(assignTo, plan.id);
       // Refresh athletes so the athlete's assignedPlanId is current when we navigate back
       await refreshCoachAthletes();
       router.back();

@@ -221,9 +221,9 @@ export default function CoachDashboard() {
 
 function AthleteRow({ athlete, onPress }: { athlete: Athlete; onPress: () => void }) {
   const status = STATUS_CONFIG[athlete.status];
-  const daysUntilRace = Math.ceil(
-    (new Date(athlete.targetRace.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+  const daysUntilRace = athlete.targetRace.date
+    ? Math.ceil((new Date(athlete.targetRace.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
   const weekProgress = athlete.currentWeekMileage / athlete.weeklyMileageTarget;
 
   return (
@@ -241,8 +241,12 @@ function AthleteRow({ athlete, onPress }: { athlete: Athlete; onPress: () => voi
           </View>
         </View>
 
-        <Text style={styles.athleteGoal}>{GOAL_LABELS[athlete.goal]} · {athlete.targetRace.name}</Text>
-        <Text style={styles.athleteMeta}>{daysUntilRace}d to race · {athlete.complianceRate}% compliance</Text>
+        <Text style={styles.athleteGoal}>
+          {GOAL_LABELS[athlete.goal]}{athlete.targetRace.name ? ` · ${athlete.targetRace.name}` : ''}
+        </Text>
+        <Text style={styles.athleteMeta}>
+          {daysUntilRace !== null ? `${daysUntilRace}d to race · ` : ''}{athlete.complianceRate}% compliance
+        </Text>
 
         {/* Week mileage bar */}
         <View style={styles.mileageRow}>

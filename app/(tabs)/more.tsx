@@ -135,11 +135,11 @@ export default function MoreScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.raceCardLabel}>Target Race</Text>
                 <Text style={styles.raceCardName} numberOfLines={1}>
-                  {athlete.targetRace?.name && athlete.targetRace.name !== 'TBD'
+                  {athlete.targetRace?.name
                     ? athlete.targetRace.name
                     : 'Not set — tap to add'}
                 </Text>
-                {athlete.targetRace?.date && athlete.targetRace.name !== 'TBD' && (
+                {athlete.targetRace?.name && athlete.targetRace?.date && (
                   <Text style={styles.raceCardDate}>
                     {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
                       month: 'long', day: 'numeric', year: 'numeric',

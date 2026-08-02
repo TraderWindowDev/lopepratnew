@@ -46,8 +46,8 @@ export async function fetchAllAthletes(): Promise<Athlete[]> {
       age: row.age ?? 0,
       goal: (row.goal ?? 'first_5k') as GoalType,
       targetRace: {
-        name: row.target_race_name ?? 'TBD',
-        date: row.target_race_date ?? new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        name: row.target_race_name ?? '',
+        date: row.target_race_date ?? '',
         location: row.target_race_location ?? '',
       },
       fitnessLevel: (row.fitness_level ?? 'beginner') as any,

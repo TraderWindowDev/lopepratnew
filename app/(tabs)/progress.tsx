@@ -54,17 +54,23 @@ export default function ProgressScreen() {
               />
               <View style={styles.goalInfo}>
                 <Text style={styles.goalLabel}>{GOAL_LABELS[athlete.goal]}</Text>
-                <View style={styles.goalRace}>
-                  <Ionicons name="flag-outline" size={14} color={Colors.gold} />
-                  <Text style={styles.goalRaceName}>{athlete.targetRace.name}</Text>
-                </View>
-                <Text style={styles.goalRaceDate}>
-                  {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </Text>
+                {athlete.targetRace.name ? (
+                  <>
+                    <View style={styles.goalRace}>
+                      <Ionicons name="flag-outline" size={14} color={Colors.gold} />
+                      <Text style={styles.goalRaceName}>{athlete.targetRace.name}</Text>
+                    </View>
+                    {athlete.targetRace.date ? (
+                      <Text style={styles.goalRaceDate}>
+                        {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : null}
                 <View style={styles.goalStreak}>
                   <Ionicons name="flame" size={14} color={Colors.primary} />
                   <Text style={styles.goalStreakText}>{athlete.streak}-day training streak</Text>

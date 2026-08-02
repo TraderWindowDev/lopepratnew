@@ -117,8 +117,8 @@ function makeBaseStep(type: Exclude<StepType, 'interval'>): BaseStep {
     stepType: type,
     targetKind: 'time',
     targetValue: def.defaultTime,
-    intensityKind: 'threshold_hr',
-    intensityRange: INTENSITY_RANGES.threshold_hr[3],
+    intensityKind: 'open',
+    intensityRange: '—',
   };
 }
 
