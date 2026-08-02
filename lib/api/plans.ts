@@ -25,19 +25,18 @@ export type PlanInput = {
   totalWeeks: number;
   targetGoal: string | null;
   weeks: WeekInput[];
+  isTemplate?: boolean;
+  templateId?: string;
+  startDate?: string; // YYYY-MM-DD — when set, each plan_day gets a scheduled_date
 };
 
-export async function fetchAllPlans() {
-  const { data, error } = await supabase
+export async function fetchAllPlans(templatesOnly = true) {
+  let q = supabase
     .from('training_plans')
-    .select(`
-      *,
-      plan_weeks (
-        *,
-        plan_days (*)
-      )
-    `)
+    .select(`*, plan_weeks (*, plan_days (*))`)
     .order('created_at', { ascending: false });
+  if (templatesOnly) q = q.eq('is_template', true);
+  const { data, error } = await q;
   if (error) throw error;
   return data ?? [];
 }
@@ -72,6 +71,8 @@ export async function createPlan(plan: PlanInput): Promise<string> {
       description: plan.description,
       total_weeks: plan.totalWeeks,
       target_goal: plan.targetGoal,
+      is_template: plan.isTemplate ?? true,
+      template_id: plan.templateId ?? null,
     })
     .select('id')
     .single();
@@ -91,6 +92,7 @@ export async function createPlan(plan: PlanInput): Promise<string> {
       .single();
     if (weekErr) throw weekErr;
 
+    const startMs = plan.startDate ? new Date(plan.startDate).getTime() : null;
     const { error: daysErr } = await supabase.from('plan_days').insert(
       week.days.map((d) => ({
         week_id: weekRow.id,
@@ -102,6 +104,9 @@ export async function createPlan(plan: PlanInput): Promise<string> {
         notes: d.notes ?? null,
         target_pace: d.targetPace ?? null,
         coach_note: d.coachNote ?? null,
+        scheduled_date: startMs
+          ? new Date(startMs + (week.weekIndex * 7 + d.dayIndex) * 86400000).toISOString().split('T')[0]
+          : null,
       }))
     );
     if (daysErr) throw daysErr;
@@ -110,17 +115,18 @@ export async function createPlan(plan: PlanInput): Promise<string> {
   return planRow.id;
 }
 
-export async function assignPlan(athleteId: string, planId: string) {
+export async function assignPlan(athleteId: string, planId: string, startDate?: string) {
+  const today = new Date().toISOString().split('T')[0];
   const { error } = await supabase
     .from('athletes')
-    .update({ assigned_plan_id: planId, current_plan_week_index: 0 })
+    .update({ assigned_plan_id: planId, current_plan_week_index: 0, plan_start_date: startDate ?? today })
     .eq('id', athleteId);
   if (error) throw error;
 }
 
 // Deep-copies a template plan then assigns the copy to the athlete,
 // so editing one athlete's plan never affects another athlete.
-export async function copyAndAssignPlan(athleteId: string, planId: string): Promise<void> {
+export async function copyAndAssignPlan(athleteId: string, planId: string, startDate?: string): Promise<void> {
   const { data, error } = await supabase
     .from('training_plans')
     .select(`
@@ -136,11 +142,15 @@ export async function copyAndAssignPlan(athleteId: string, planId: string): Prom
     .single();
   if (error) throw error;
 
+  const effectiveStartDate = startDate ?? new Date().toISOString().split('T')[0];
   const planInput: PlanInput = {
     name: data.name,
     description: data.description ?? '',
     totalWeeks: data.total_weeks,
     targetGoal: data.target_goal ?? null,
+    isTemplate: false,
+    templateId: planId,
+    startDate: effectiveStartDate,
     weeks: (data.plan_weeks as any[])
       .sort((a: any, b: any) => a.week_index - b.week_index)
       .map((w: any) => ({
@@ -164,7 +174,34 @@ export async function copyAndAssignPlan(athleteId: string, planId: string): Prom
   };
 
   const newPlanId = await createPlan(planInput);
-  await assignPlan(athleteId, newPlanId);
+  await assignPlan(athleteId, newPlanId, effectiveStartDate);
+}
+
+async function recomputePlanDayDates(planId: string, startDate: string) {
+  const { data: weeks, error } = await supabase
+    .from('plan_weeks')
+    .select('week_index, plan_days(id, day_index)')
+    .eq('plan_id', planId);
+  if (error) throw error;
+  const startMs = new Date(startDate).getTime();
+  await Promise.all(
+    (weeks ?? []).flatMap((w: any) =>
+      (w.plan_days ?? []).map((d: any) => {
+        const dateStr = new Date(startMs + (w.week_index * 7 + d.day_index) * 86400000)
+          .toISOString().split('T')[0];
+        return supabase.from('plan_days').update({ scheduled_date: dateStr }).eq('id', d.id);
+      })
+    )
+  );
+}
+
+export async function updatePlanStartDate(athleteId: string, planId: string, startDate: string) {
+  const { error } = await supabase
+    .from('athletes')
+    .update({ plan_start_date: startDate })
+    .eq('id', athleteId);
+  if (error) throw error;
+  await recomputePlanDayDates(planId, startDate);
 }
 
 export async function unassignPlan(athleteId: string) {

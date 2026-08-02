@@ -29,7 +29,7 @@ export async function fetchPlan(planId: string) {
       plan_weeks (
         id, week_index, phase, focus, total_km,
         plan_days (
-          id, day_index, day_label, workout_type, title, km, notes, target_pace, coach_note
+          id, day_index, day_label, workout_type, title, km, notes, target_pace, coach_note, scheduled_date
         )
       )
     `)
@@ -158,6 +158,7 @@ export function buildAthleteFromParts(
     alerts: [],
     assignedPlanId: row?.assigned_plan_id ?? undefined,
     currentPlanWeekIndex: row?.current_plan_week_index ?? 0,
+    planStartDate: row?.plan_start_date ?? undefined,
     weeklyMileageHistory: [],
     paceHistory: [],
   };
@@ -330,9 +331,11 @@ export function buildPlanFromRow(planRow: any): TrainingPlan | null {
     name: planRow.name,
     description: planRow.description ?? '',
     totalWeeks: planRow.total_weeks,
-    targetGoal: (planRow.target_goal ?? 'first_5k') as GoalType,
+    targetGoal: (planRow.target_goal ?? null) as GoalType | null,
     createdBy: 'Coach',
     createdAt: planRow.created_at,
+    isTemplate: planRow.is_template ?? true,
+    templateId: planRow.template_id ?? undefined,
     weeks: (planRow.plan_weeks ?? [])
       .sort((a: any, b: any) => a.week_index - b.week_index)
       .map((w: any) => ({
@@ -359,6 +362,7 @@ export function buildPlanFromRow(planRow: any): TrainingPlan | null {
               notes,
               targetPace: d.target_pace ?? undefined,
               coachNote: d.coach_note ?? undefined,
+              scheduledDate: d.scheduled_date ?? undefined,
               structuredWorkout,
             };
           }),
@@ -382,7 +386,7 @@ export function buildWeekPlanFromPlan(
       const log = logsByDay.get(i);
       return {
         id: `plan-w${weekIndex}-d${i}`,
-        date: new Date().toISOString(),
+        date: d.scheduledDate ?? new Date().toISOString().split('T')[0],
         type: d.type,
         title: d.title,
         subtitle: buildSubtitle(d),

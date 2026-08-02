@@ -35,7 +35,7 @@ const WORKOUT_COLORS: Record<WorkoutType, string> = {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { athlete, weekPlan, refreshAthleteState } = useStore();
+  const { athlete, weekPlan, assignedPlan, viewingWeekIndex, refreshAthleteState } = useStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -45,11 +45,16 @@ export default function HomeScreen() {
   }, [refreshAthleteState]);
 
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=Sun
-  const adjustedDay = (dayOfWeek + 6) % 7; // 0=Mon
+  const todayStr = today.toISOString().split('T')[0];
+  const planNotStarted = !!assignedPlan && !!athlete.planStartDate && athlete.planStartDate > todayStr;
+  const daysUntilStart = planNotStarted
+    ? Math.round((new Date(athlete.planStartDate!).getTime() - today.getTime()) / 86400000)
+    : 0;
+  const planStartDate = athlete.planStartDate ? new Date(athlete.planStartDate) : null;
+  const adjustedDay = weekPlan.workouts.findIndex((w) => w.date === todayStr);
 
   const hasPlan = weekPlan.workouts.length > 0;
-  const todayWorkout = weekPlan.workouts[adjustedDay] ?? weekPlan.workouts[0] ?? null;
+  const todayWorkout = adjustedDay >= 0 ? weekPlan.workouts[adjustedDay] : null;
   const completedCount = weekPlan.workouts.filter((w) => w.completed).length;
   const weekProgress = hasPlan ? completedCount / weekPlan.workouts.length : 0;
 
@@ -86,7 +91,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Today's workout hero */}
-          {!hasPlan || !todayWorkout ? (
+          {!hasPlan ? (
             <View style={styles.workoutHero}>
               <LinearGradient colors={[Colors.card, Colors.cardElevated]} style={styles.heroGrad}>
                 <View style={[styles.accentLine, { backgroundColor: Colors.border }]} />
@@ -99,7 +104,22 @@ export default function HomeScreen() {
                 </View>
               </LinearGradient>
             </View>
-          ) : (
+          ) : planNotStarted ? (
+            <View style={styles.workoutHero}>
+              <LinearGradient colors={[Colors.card, Colors.cardElevated]} style={styles.heroGrad}>
+                <View style={[styles.accentLine, { backgroundColor: Colors.primary + '55' }]} />
+                <View style={[styles.heroContent, { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 }]}>
+                  <Ionicons name="time-outline" size={36} color={Colors.primary} />
+                  <Text style={[styles.heroTitle, { textAlign: 'center', marginTop: 12 }]}>
+                    Plan starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+                  </Text>
+                  <Text style={[styles.heroSub, { textAlign: 'center' }]}>
+                    {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </View>
+          ) : !todayWorkout ? null : (
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => router.push(`/workout/${todayWorkout.id}`)}
@@ -155,11 +175,18 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Week strip */}
-          <Card style={styles.weekCard} padding={16}>
+          {/* Week strip — hidden until plan starts */}
+          {!planNotStarted && <Card style={styles.weekCard} padding={16}>
             <View style={styles.weekHeader}>
               <Text style={styles.sectionTitle}>This Week</Text>
-              <Text style={styles.weekPhase}>{weekPlan.phase}</Text>
+              <View style={styles.weekHeaderRight}>
+                {assignedPlan && (
+                  <Text style={styles.weekIndexLabel}>
+                    Week {viewingWeekIndex + 1} of {assignedPlan.totalWeeks}
+                  </Text>
+                )}
+                <Text style={styles.weekPhase}>{weekPlan.phase}</Text>
+              </View>
             </View>
             <View style={styles.weekDays}>
               {weekPlan.workouts.map((w, i) => {
@@ -213,7 +240,7 @@ export default function HomeScreen() {
                 <View style={[styles.weekProgressFill, { width: `${(weekKmDone / weekPlan.totalKm) * 100}%` }]} />
               </View>
             </View>
-          </Card>
+          </Card>}
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -348,6 +375,8 @@ const styles = StyleSheet.create({
 
   weekCard: { marginBottom: 16 },
   weekHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  weekHeaderRight: { alignItems: 'flex-end', gap: 2 },
+  weekIndexLabel: { ...Font.tiny, color: Colors.textMuted },
   sectionTitle: { ...Font.h4, color: Colors.text },
   weekPhase: { ...Font.label, color: Colors.primary },
   weekDays: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },

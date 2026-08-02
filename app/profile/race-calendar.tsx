@@ -66,7 +66,7 @@ export default function RaceCalendarScreen() {
   // ── race add/edit modal ───────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', date: '', distance: 'Marathon', location: '' });
+  const [form, setForm] = useState({ name: '', date: '', distance: 'Marathon', location: '', isTarget: false });
 
   // ── result modal ──────────────────────────────────────────────────────────
   const [showResultModal, setShowResultModal] = useState(false);
@@ -86,23 +86,34 @@ export default function RaceCalendarScreen() {
 
   function openAdd() {
     setEditingId(null);
-    setForm({ name: '', date: '', distance: 'Marathon', location: '' });
+    const hasTarget = races.some(r => r.isTarget);
+    setForm({ name: '', date: '', distance: 'Marathon', location: '', isTarget: !hasTarget });
     setShowModal(true);
   }
 
   function openEdit(race: Race) {
     setEditingId(race.id);
-    setForm({ name: race.name, date: race.date, distance: race.distance, location: race.location });
+    setForm({ name: race.name, date: race.date, distance: race.distance, location: race.location, isTarget: race.isTarget ?? false });
     setShowModal(true);
   }
 
   function handleSave() {
     if (!form.name || !form.date) return;
     if (editingId) {
-      setRaces(prev => prev.map(r => r.id === editingId ? { ...r, ...form } : r));
-      if (editingId === 'target') setTargetRace(form.name, form.date, form.location);
+      setRaces(prev => prev.map(r =>
+        r.id === editingId
+          ? { ...r, ...form }
+          : form.isTarget ? { ...r, isTarget: false } : r
+      ));
     } else {
-      setRaces(prev => [...prev, { id: `race-${Date.now()}`, ...form }]);
+      const newRace = { id: `race-${Date.now()}`, ...form };
+      setRaces(prev => [
+        ...(form.isTarget ? prev.map(r => ({ ...r, isTarget: false })) : prev),
+        newRace,
+      ]);
+    }
+    if (form.isTarget) {
+      setTargetRace(form.name, form.date, form.location);
     }
     setShowModal(false);
   }
@@ -343,6 +354,23 @@ export default function RaceCalendarScreen() {
                 />
               </View>
 
+              <TouchableOpacity
+                style={[styles.targetToggle, form.isTarget && styles.targetToggleActive]}
+                onPress={() => setForm(f => ({ ...f, isTarget: !f.isTarget }))}
+              >
+                <Ionicons
+                  name={form.isTarget ? 'trophy' : 'trophy-outline'}
+                  size={18}
+                  color={form.isTarget ? Colors.gold : Colors.textMuted}
+                />
+                <Text style={[styles.targetToggleText, form.isTarget && styles.targetToggleTextActive]}>
+                  Set as goal race
+                </Text>
+                {form.isTarget && (
+                  <Ionicons name="checkmark-circle" size={18} color={Colors.gold} style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+
               <View style={styles.modalActions}>
                 {editingId && !races.find(r => r.id === editingId)?.isTarget && (
                   <TouchableOpacity
@@ -534,6 +562,16 @@ const styles = StyleSheet.create({
   distanceOptionTextActive: { color: Colors.primary, fontWeight: '600' },
 
   resultRow2: { flexDirection: 'row', gap: 10 },
+
+  targetToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  targetToggleActive: { backgroundColor: Colors.goldFade, borderColor: Colors.gold + '66' },
+  targetToggleText: { ...Font.body, color: Colors.textMuted, flex: 1 },
+  targetToggleTextActive: { color: Colors.gold },
 
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   deleteBtn: {

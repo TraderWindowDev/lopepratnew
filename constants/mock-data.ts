@@ -53,6 +53,7 @@ export interface PlanDay {
   notes?: string;
   targetPace?: string;
   coachNote?: string;
+  scheduledDate?: string; // YYYY-MM-DD, set when plan is assigned with a start date
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   structuredWorkout?: any;
 }
@@ -70,10 +71,12 @@ export interface TrainingPlan {
   name: string;
   description: string;
   totalWeeks: number;
-  targetGoal: GoalType;
+  targetGoal: GoalType | null;
   createdBy: string;
   createdAt: string;
   weeks: PlanWeek[];
+  isTemplate: boolean;
+  templateId?: string;
 }
 
 export interface Milestone {
@@ -106,6 +109,7 @@ export interface Athlete {
   alerts: string[];
   assignedPlanId?: string;
   currentPlanWeekIndex?: number;
+  planStartDate?: string;
   weeklyMileageHistory: number[];
   paceHistory: { date: string; pace: number }[];
 }
@@ -619,6 +623,7 @@ export const trainingPlans: TrainingPlan[] = [
     description: '4-week block targeting sub-3:55 at Chicago. Progresses from 55 km to 65 km before a taper week.',
     totalWeeks: 4,
     targetGoal: 'pb_marathon',
+    isTemplate: true,
     createdBy: 'Coach Arnaud',
     createdAt: '2026-05-25',
     weeks: [
@@ -690,6 +695,7 @@ export const trainingPlans: TrainingPlan[] = [
     description: '4-week aerobic foundation block for a first-time marathoner. Consistency over intensity.',
     totalWeeks: 4,
     targetGoal: 'first_marathon',
+    isTemplate: true,
     createdBy: 'Coach Léa',
     createdAt: '2026-05-20',
     weeks: [

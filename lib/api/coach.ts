@@ -63,6 +63,7 @@ export async function fetchAllAthletes(): Promise<Athlete[]> {
       alerts: [],
       assignedPlanId: row.assigned_plan_id ?? undefined,
       currentPlanWeekIndex: weekIdx,
+      planStartDate: row.plan_start_date ?? undefined,
       weeklyMileageHistory: [],
       paceHistory: [],
     };

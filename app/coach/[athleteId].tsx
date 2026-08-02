@@ -10,12 +10,13 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '@/hooks/useStore';
-import { unassignPlan } from '@/lib/api/plans';
+import { unassignPlan, updatePlanStartDate } from '@/lib/api/plans';
 import { fetchPersonalBests, fetchAllWorkoutLogs, computeAthleteStats } from '@/lib/api/athletes';
 import { fetchRaceResults, type RaceResult } from '@/lib/api/race-results';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
@@ -51,12 +52,16 @@ export default function AthleteDetailScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'plan' | 'notes'>('overview');
   const [selectedPlanWeek, setSelectedPlanWeek] = useState(0);
   const [removing, setRemoving] = useState(false);
+  const [savingStartDate, setSavingStartDate] = useState(false);
+  const [startDateError, setStartDateError] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   type DetailData = {
     personalBests: Athlete['personalBests'];
     weeklyMileageHistory: number[];
     paceHistory: Athlete['paceHistory'];
     completedDays: Set<string>;
+    logsByDay: Map<string, { notes?: string; distance?: number; duration_minutes?: number; effort_rating?: number }>;
     raceResults: RaceResult[];
   };
   const [detailData, setDetailData] = useState<DetailData | null>(null);
@@ -72,9 +77,13 @@ export default function AthleteDetailScreen() {
     ]).then(([pbs, logs, raceResults]) => {
       const weekIndex = currentAthlete?.currentPlanWeekIndex ?? 0;
       const { weeklyMileageHistory, paceHistory } = computeAthleteStats(logs, weekIndex);
-      const planLogs = planId ? logs.filter(l => (l as any).plan_id === planId) : [];
-      const completedDays = new Set(planLogs.map(l => `${l.week_index}-${l.day_index}`));
-      setDetailData({ personalBests: pbs, weeklyMileageHistory, paceHistory, completedDays, raceResults });
+      const planLogs = planId ? logs.filter(l => (l as any).plan_id === planId) : logs;
+      const completedDays = new Set(planLogs.map((l: any) => `${l.week_index}-${l.day_index}`));
+      const logsByDay = new Map(planLogs.map((l: any) => [
+        `${l.week_index}-${l.day_index}`,
+        { notes: l.notes, distance: l.distance, duration_minutes: l.duration_minutes, effort_rating: l.effort_rating },
+      ]));
+      setDetailData({ personalBests: pbs, weeklyMileageHistory, paceHistory, completedDays, logsByDay, raceResults });
     }).catch((e) => console.warn('[coach detail] fetch:', e.message));
   }, [athleteId]);
 
@@ -83,8 +92,19 @@ export default function AthleteDetailScreen() {
     ? coachPlans.find((p) => p.id === athlete.assignedPlanId) ?? null
     : null;
 
-  const planComplete = assignedPlan != null &&
-    (athlete?.currentPlanWeekIndex ?? 0) >= assignedPlan.totalWeeks;
+  const currentPlanWeek = (() => {
+    if (!assignedPlan || !athlete?.planStartDate) return athlete?.currentPlanWeekIndex ?? 0;
+    const diffDays = Math.floor((Date.now() - new Date(athlete.planStartDate).getTime()) / 86400000);
+    return Math.max(0, Math.min(Math.floor(diffDays / 7), assignedPlan.totalWeeks - 1));
+  })();
+  const planComplete = assignedPlan != null && athlete?.planStartDate != null && (() => {
+    const diffDays = Math.floor((Date.now() - new Date(athlete.planStartDate!).getTime()) / 86400000);
+    return diffDays >= assignedPlan.totalWeeks * 7;
+  })();
+  const planEndDate = assignedPlan && athlete?.planStartDate
+    ? new Date(new Date(athlete.planStartDate).getTime() + assignedPlan.totalWeeks * 7 * 86400000)
+      .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
 
   async function handleRemovePlan() {
     Alert.alert(
@@ -361,13 +381,92 @@ export default function AthleteDetailScreen() {
                       </View>
                     </View>
                     <View style={styles.planMeta}>
-                      <Ionicons name="person-outline" size={12} color={Colors.textMuted} />
-                      <Text style={styles.planMetaText}>Created by {assignedPlan.createdBy}</Text>
-                      <View style={styles.planMetaDot} />
                       <Text style={styles.planMetaText}>
-                        {planComplete ? 'Completed' : `Active week: ${(athlete.currentPlanWeekIndex ?? 0) + 1}`}
+                        {planComplete
+                          ? 'Completed'
+                          : `Week ${currentPlanWeek + 1} of ${assignedPlan.totalWeeks}`}
                       </Text>
+                      {planEndDate && !planComplete ? (
+                        <>
+                          <View style={styles.planMetaDot} />
+                          <Text style={styles.planMetaText}>ends {planEndDate}</Text>
+                        </>
+                      ) : null}
                     </View>
+
+                    {/* Start date */}
+                    <View style={styles.startDateSection}>
+                      <View style={styles.startDateHeader}>
+                        <Ionicons name="calendar-outline" size={13} color={Colors.textMuted} />
+                        <Text style={styles.startDateLabel}>
+                          {athlete.planStartDate
+                            ? `Started ${new Date(athlete.planStartDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                            : 'Plan start date not set'}
+                        </Text>
+                      </View>
+                      <View style={styles.startDateBtns}>
+                        {(['Today', 'Next Monday'] as const).map((label) => {
+                          const d = new Date();
+                          if (label === 'Next Monday') {
+                            const day = d.getDay();
+                            d.setDate(d.getDate() + (day === 0 ? 1 : 8 - day));
+                          }
+                          const val = d.toISOString().split('T')[0];
+                          const isActive = athlete.planStartDate === val;
+                          return (
+                            <TouchableOpacity
+                              key={label}
+                              style={[styles.startDateBtn, isActive && styles.startDateBtnActive]}
+                              disabled={savingStartDate}
+                              onPress={async () => {
+                                if (!athleteId) return;
+                                setSavingStartDate(true);
+                                setStartDateError('');
+                                try {
+                                  await updatePlanStartDate(athleteId, assignedPlan!.id, val);
+                                  await refreshCoachAthletes();
+                                } catch (e: any) {
+                                  setStartDateError(e.message ?? 'Failed to save');
+                                }
+                                setSavingStartDate(false);
+                              }}
+                            >
+                              <Text style={[styles.startDateBtnText, isActive && styles.startDateBtnTextActive]}>
+                                {label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                        <TouchableOpacity
+                          style={styles.startDateBtn}
+                          disabled={savingStartDate}
+                          onPress={() => setShowDatePicker(true)}
+                        >
+                          <Ionicons name="calendar-outline" size={13} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                      </View>
+                      {startDateError ? (
+                        <Text style={styles.startDateErrorText}>{startDateError}</Text>
+                      ) : null}
+                    </View>
+                    <CalendarPicker
+                      visible={showDatePicker}
+                      selectedDate={athlete.planStartDate}
+                      onClose={() => setShowDatePicker(false)}
+                      onSelect={async (dateStr) => {
+                        setShowDatePicker(false);
+                        if (!athleteId) return;
+                        setSavingStartDate(true);
+                        setStartDateError('');
+                        try {
+                          await updatePlanStartDate(athleteId, assignedPlan!.id, dateStr);
+                          await refreshCoachAthletes();
+                        } catch (e: any) {
+                          setStartDateError(e.message ?? 'Failed to save');
+                        }
+                        setSavingStartDate(false);
+                      }}
+                    />
                     <View style={styles.planActions}>
                       <TouchableOpacity
                         style={styles.changePlanBtn}
@@ -457,7 +556,9 @@ export default function AthleteDetailScreen() {
 
                         {week.days.map((day, dayIdx) => {
                           const color = typeColors[day.type];
-                          const isDone = detailData?.completedDays.has(`${selectedPlanWeek}-${dayIdx}`) ?? false;
+                          const dayKey = `${selectedPlanWeek}-${dayIdx}`;
+                          const isDone = detailData?.completedDays.has(dayKey) ?? false;
+                          const log = detailData?.logsByDay.get(dayKey);
                           return (
                             <View key={day.day} style={styles.planDay}>
                               <View style={styles.planDayLabelRow}>
@@ -492,6 +593,18 @@ export default function AthleteDetailScreen() {
                                 }
                                 return <Text style={styles.planDayNotes}>{day.notes}</Text>;
                               })()}
+                              {isDone && log?.notes ? (
+                                <View style={styles.athleteCommentRow}>
+                                  <Ionicons name="chatbubble-ellipses-outline" size={12} color={Colors.primary} />
+                                  <Text style={styles.athleteComment}>"{log.notes}"</Text>
+                                </View>
+                              ) : null}
+                              {isDone && (log?.distance || log?.effort_rating) ? (
+                                <View style={styles.logMetaRow}>
+                                  {log?.distance ? <Text style={styles.logMeta}>{log.distance} km logged</Text> : null}
+                                  {log?.effort_rating ? <Text style={styles.logMeta}>· effort {log.effort_rating}/10</Text> : null}
+                                </View>
+                              ) : null}
                             </View>
                           );
                         })}
@@ -684,6 +797,23 @@ const styles = StyleSheet.create({
   planMetaText: { ...Font.tiny, color: Colors.textMuted },
   planMetaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: Colors.border },
 
+  startDateSection: {
+    gap: 8, paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  startDateHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  startDateLabel: { ...Font.tiny, color: Colors.textMuted },
+  startDateBtns: { flexDirection: 'row', gap: 8 },
+  startDateBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: Radius.sm,
+    backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  startDateBtnActive: { backgroundColor: Colors.primaryFade, borderColor: Colors.primary },
+  startDateBtnText: { ...Font.small, color: Colors.textSecondary, fontWeight: '600' },
+  startDateBtnTextActive: { color: Colors.primary },
+  startDateErrorText: { ...Font.tiny, color: Colors.error },
+
   weekSelectorRow: { paddingHorizontal: Spacing.md, gap: 8, marginBottom: 4 },
   weekTab: {
     alignItems: 'center',
@@ -737,6 +867,10 @@ const styles = StyleSheet.create({
   planDayTitle: { ...Font.small, color: Colors.text },
   planDayKm: { ...Font.small, color: Colors.textSecondary },
   planDayNotes: { ...Font.tiny, color: Colors.textMuted, fontStyle: 'italic', paddingLeft: 0 },
+  athleteCommentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4, paddingLeft: 2 },
+  athleteComment: { ...Font.tiny, color: Colors.primary, fontStyle: 'italic', flex: 1 },
+  logMetaRow: { flexDirection: 'row', gap: 4, marginTop: 2, paddingLeft: 2 },
+  logMeta: { ...Font.tiny, color: Colors.textMuted },
 
   intervalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 5 },
   intervalChip: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
@@ -829,4 +963,107 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   templateText: { ...Font.small, color: Colors.textSecondary, flex: 1 },
+});
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_CELL = 38;
+
+function CalendarPicker({
+  visible, selectedDate, onSelect, onClose,
+}: {
+  visible: boolean;
+  selectedDate?: string;
+  onSelect: (date: string) => void;
+  onClose: () => void;
+}) {
+  const initial = selectedDate ? new Date(selectedDate) : new Date();
+  const [viewYear, setViewYear] = useState(initial.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initial.getMonth());
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11); }
+    else setViewMonth((m) => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear((y) => y + 1); setViewMonth(0); }
+    else setViewMonth((m) => m + 1);
+  }
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstOffset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7; // 0=Mon
+  const cells: (number | null)[] = [
+    ...Array(firstOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={calStyles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={calStyles.picker}>
+          <View style={calStyles.header}>
+            <TouchableOpacity onPress={prevMonth} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="chevron-back" size={20} color={Colors.text} />
+            </TouchableOpacity>
+            <Text style={calStyles.monthLabel}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
+            <TouchableOpacity onPress={nextMonth} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="chevron-forward" size={20} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+          <View style={calStyles.dayHeaders}>
+            {['M','T','W','T','F','S','S'].map((d, i) => (
+              <Text key={i} style={calStyles.dayHeader}>{d}</Text>
+            ))}
+          </View>
+          <View style={calStyles.grid}>
+            {cells.map((day, i) => {
+              if (!day) return <View key={i} style={calStyles.cell} />;
+              const mm = String(viewMonth + 1).padStart(2, '0');
+              const dd = String(day).padStart(2, '0');
+              const dateStr = `${viewYear}-${mm}-${dd}`;
+              const isSelected = dateStr === selectedDate;
+              const isToday = dateStr === todayStr;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[calStyles.cell, isSelected && calStyles.cellSelected, isToday && !isSelected && calStyles.cellToday]}
+                  onPress={() => onSelect(dateStr)}
+                >
+                  <Text style={[calStyles.cellText, isSelected && calStyles.cellTextSelected, isToday && !isSelected && calStyles.cellTextToday]}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const CAL_PAD = 16;
+const calStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center' },
+  picker: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    padding: CAL_PAD,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: CAL_CELL * 7 + CAL_PAD * 2,
+  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  monthLabel: { ...Font.label, color: Colors.text },
+  dayHeaders: { flexDirection: 'row', width: CAL_CELL * 7, marginBottom: 4 },
+  dayHeader: { width: CAL_CELL, textAlign: 'center', ...Font.tiny, color: Colors.textMuted, fontWeight: '700' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', width: CAL_CELL * 7 },
+  cell: { width: CAL_CELL, height: CAL_CELL, alignItems: 'center', justifyContent: 'center' },
+  cellSelected: { backgroundColor: Colors.primary, borderRadius: CAL_CELL / 2 },
+  cellToday: { borderWidth: 1, borderColor: Colors.primary, borderRadius: CAL_CELL / 2 },
+  cellText: { ...Font.small, color: Colors.text },
+  cellTextSelected: { color: '#fff', fontWeight: '700' },
+  cellTextToday: { color: Colors.primary, fontWeight: '600' },
 });

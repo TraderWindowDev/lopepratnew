@@ -47,7 +47,13 @@ export default function TrainingScreen() {
   const planWeek = assignedPlan?.weeks[viewingWeekIdx];
 
   const today = new Date();
-  const todayIdx = (today.getDay() + 6) % 7;
+  const todayStr = today.toISOString().split('T')[0];
+  const planNotStarted = !!assignedPlan && !!athlete.planStartDate && athlete.planStartDate > todayStr;
+  const daysUntilStart = planNotStarted
+    ? Math.round((new Date(athlete.planStartDate!).getTime() - today.getTime()) / 86400000)
+    : 0;
+  const planStartDate = athlete.planStartDate ? new Date(athlete.planStartDate) : null;
+  const todayIdx = weekPlan.workouts.findIndex((w) => w.date === todayStr);
 
   const totalKmDone = weekPlan.workouts
     .filter((w) => w.completed && w.actual)
@@ -108,7 +114,7 @@ export default function TrainingScreen() {
 
               <View style={styles.weekNavCenter}>
                 <Text style={styles.weekNavLabel}>{weekLabel}</Text>
-                {isCurrentWeek && (
+                {isCurrentWeek && !planNotStarted && (
                   <View style={styles.currentWeekPill}>
                     <Text style={styles.currentWeekPillText}>CURRENT</Text>
                   </View>
@@ -125,8 +131,21 @@ export default function TrainingScreen() {
             </View>
           )}
 
+          {/* Plan not started banner */}
+          {planNotStarted && (
+            <Card style={styles.notStartedCard} padding={20}>
+              <Ionicons name="time-outline" size={32} color={Colors.primary} style={{ alignSelf: 'center', marginBottom: 10 }} />
+              <Text style={styles.notStartedTitle}>
+                Plan starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+              </Text>
+              <Text style={styles.notStartedSub}>
+                {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </Text>
+            </Card>
+          )}
+
           {/* Week progress bar — only for current active week (not when plan is complete) */}
-          {isCurrentWeek && !planComplete && (
+          {isCurrentWeek && !planComplete && !planNotStarted && (
             <Card style={styles.progressCard} padding={16}>
               <View style={styles.progressRow}>
                 <Text style={styles.progressLabel}>
@@ -157,7 +176,7 @@ export default function TrainingScreen() {
           )}
 
           {/* Day selector */}
-          {isCurrentWeek ? (
+          {!planNotStarted && isCurrentWeek ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll} contentContainerStyle={styles.dayScrollContent}>
               {weekPlan.workouts.map((w, i) => {
                 const color = WORKOUT_COLORS[w.type];
@@ -191,7 +210,7 @@ export default function TrainingScreen() {
                 );
               })}
             </ScrollView>
-          ) : planWeek && (
+          ) : !planNotStarted && planWeek && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll} contentContainerStyle={styles.dayScrollContent}>
               {planWeek.days.map((d, i) => {
                 const color = WORKOUT_COLORS[d.type];
@@ -239,7 +258,7 @@ export default function TrainingScreen() {
           )}
 
           {/* Workout list */}
-          <View style={styles.workoutList}>
+          {!planNotStarted && <View style={styles.workoutList}>
             {isCurrentWeek
               ? weekPlan.workouts.map((w, i) => {
                   if (selectedDay !== null && selectedDay !== i) return null;
@@ -341,7 +360,7 @@ export default function TrainingScreen() {
                     </TouchableOpacity>
                   );
                 })}
-          </View>
+          </View>}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -486,4 +505,8 @@ const styles = StyleSheet.create({
   intervalChipText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
   intervalPace: { ...Font.tiny, color: Colors.textSecondary },
   intervalRec: { ...Font.tiny, color: Colors.textMuted },
+
+  notStartedCard: { alignItems: 'center', gap: 6 },
+  notStartedTitle: { ...Font.h3, color: Colors.text, textAlign: 'center' },
+  notStartedSub: { ...Font.body, color: Colors.textMuted, textAlign: 'center' },
 });

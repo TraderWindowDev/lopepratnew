@@ -109,10 +109,21 @@ async function loadAthleteState(userId: string): Promise<Partial<AppState>> {
   const athleteMilestones = milestoneRows;
   const messages = messageRows.map(mapMessageRow);
 
-  const weekIndex = athleteRow?.current_plan_week_index ?? 0;
+  // Fetch logs and plan in parallel — we need the plan's totalWeeks to cap the week index
+  const [allLogs, planRow] = await Promise.all([
+    fetchAllWorkoutLogs(userId),
+    athleteRow?.assigned_plan_id ? fetchPlan(athleteRow.assigned_plan_id) : Promise.resolve(null),
+  ]);
 
-  // Fetch ALL logs — mileage counts every run, plan filter only applies to completion ticks
-  const allLogs = await fetchAllWorkoutLogs(userId);
+  let assignedPlan: TrainingPlan | null = planRow ? buildPlanFromRow(planRow) : null;
+
+  // Derive current week from start date if available; fall back to stored index
+  let weekIndex = athleteRow?.current_plan_week_index ?? 0;
+  if (assignedPlan && athleteRow?.plan_start_date) {
+    const diffDays = Math.floor((Date.now() - new Date(athleteRow.plan_start_date).getTime()) / 86400000);
+    weekIndex = Math.max(0, Math.min(Math.floor(diffDays / 7), assignedPlan.totalWeeks - 1));
+  }
+
   const { currentWeekMileage, weeklyMileageHistory, paceHistory } = computeAthleteStats(allLogs, weekIndex);
 
   const athlete: Athlete = {
@@ -123,22 +134,15 @@ async function loadAthleteState(userId: string): Promise<Partial<AppState>> {
     paceHistory,
   };
 
-  let assignedPlan: TrainingPlan | null = null;
   let weekPlan = emptyWeekPlan;
-
-  if (athleteRow?.assigned_plan_id) {
-    const planRow = await fetchPlan(athleteRow.assigned_plan_id);
-    assignedPlan = buildPlanFromRow(planRow);
-    if (assignedPlan) {
-      // Only logs tagged to this plan count as "completed" on a specific day.
-      // All logs still count toward mileage (computed above with allLogs).
-      const planId = athleteRow.assigned_plan_id;
-      const weekLogs = allLogs.filter(
-        l => l.week_index === weekIndex && (l as any).plan_id === planId
-      );
-      weekPlan = buildWeekPlanFromPlan(assignedPlan, weekIndex, weekLogs);
-    }
+  if (assignedPlan) {
+    const planId = athleteRow!.assigned_plan_id;
+    const weekLogs = allLogs.filter(
+      l => l.week_index === weekIndex && (l as any).plan_id === planId
+    );
+    weekPlan = buildWeekPlanFromPlan(assignedPlan, weekIndex, weekLogs);
   }
+
   return { athlete, assignedPlan, viewingWeekIndex: weekIndex, weekPlan, messages, athleteMilestones };
 }
 

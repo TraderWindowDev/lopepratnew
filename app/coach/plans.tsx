@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { GOAL_LABELS, type TrainingPlan, type GoalType } from '@/constants/mock-data';
-import { copyAndAssignPlan } from '@/lib/api/plans';
 import { Card } from '@/components/ui/Card';
+import { copyAndAssignPlan } from '@/lib/api/plans';
 
 const GOAL_COLORS: Record<GoalType, string> = {
   first_5k: Colors.easy,
@@ -38,19 +39,16 @@ export default function PlansScreen() {
 
   const athlete = assignTo ? coachAthletes.find((a) => a.id === assignTo) : null;
 
-  async function handleAssign(plan: TrainingPlan) {
+  async function handleAssign(planId: string) {
     if (!assignTo) return;
-    setAssigning(plan.id);
+    setAssigning(planId);
     setAssignError('');
     try {
-      await copyAndAssignPlan(assignTo, plan.id);
-      // Refresh athletes so the athlete's assignedPlanId is current when we navigate back
+      await copyAndAssignPlan(assignTo, planId);
       await refreshCoachAthletes();
       router.back();
     } catch (e: any) {
-      const msg = e.message ?? 'Failed to assign plan';
-      console.warn('[plans] assign error:', msg);
-      setAssignError(msg);
+      setAssignError(e.message ?? 'Failed to assign plan');
     } finally {
       setAssigning(null);
     }
@@ -76,34 +74,38 @@ export default function PlansScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-          <Text style={styles.title}>Training Plans</Text>
+          <Text style={styles.title}>{assignTo ? 'Select Template' : 'Plan Templates'}</Text>
+
+          {assignTo && (
+            <View style={styles.assignBanner}>
+              <Ionicons name="person-outline" size={14} color={Colors.primary} />
+              <Text style={styles.assignBannerText}>
+                Tap a template to assign to {athlete?.name ?? 'athlete'}
+              </Text>
+            </View>
+          )}
           {assignError ? (
             <View style={styles.errorBanner}>
               <Ionicons name="alert-circle-outline" size={14} color={Colors.error} />
               <Text style={styles.errorBannerText}>{assignError}</Text>
             </View>
           ) : null}
-          {assignTo && (
-            <View style={styles.assignBanner}>
-              <Ionicons name="person-outline" size={14} color={Colors.primary} />
-              <Text style={styles.assignBannerText}>
-                Select a plan to assign to {athlete?.name ?? 'athlete'}
-              </Text>
-            </View>
-          )}
 
           {coachPlans.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="calendar-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>No plans yet</Text>
-              <Text style={styles.emptySub}>Create your first training plan to assign to athletes.</Text>
+              <Ionicons name="layers-outline" size={48} color={Colors.textMuted} />
+              <Text style={styles.emptyTitle}>No templates yet</Text>
+              <Text style={styles.emptySub}>
+                Create a plan template. When you assign it to an athlete, they get their own
+                independent copy — edits to their plan never change the template.
+              </Text>
               <TouchableOpacity
                 style={styles.emptyBtn}
                 onPress={() =>
                   router.push(assignTo ? `/coach/create-plan?assignTo=${assignTo}` : '/coach/create-plan')
                 }
               >
-                <Text style={styles.emptyBtnText}>Create Plan</Text>
+                <Text style={styles.emptyBtnText}>Create Template</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -114,7 +116,7 @@ export default function PlansScreen() {
                   plan={plan}
                   assignMode={!!assignTo}
                   isAssigning={assigning === plan.id}
-                  onAssign={() => handleAssign(plan)}
+                  onAssign={() => handleAssign(plan.id)}
                   onEdit={() => router.push(`/coach/create-plan?planId=${plan.id}`)}
                 />
               ))}
@@ -139,11 +141,11 @@ function PlanCard({
   onAssign: () => void;
   onEdit: () => void;
 }) {
-  const goalColor = GOAL_COLORS[plan.targetGoal] ?? Colors.primary;
+  const goalColor = plan.targetGoal ? (GOAL_COLORS[plan.targetGoal] ?? Colors.primary) : Colors.primary;
   const totalKm = plan.weeks.reduce((sum, w) => sum + w.totalKm, 0);
 
-  return (
-    <Card style={styles.planCard} padding={16}>
+  const inner = (
+    <View style={styles.planCardInner}>
       <View style={styles.planTop}>
         <View style={styles.planLeft}>
           <Text style={styles.planName}>{plan.name}</Text>
@@ -158,16 +160,16 @@ function PlanCard({
       </View>
 
       <View style={styles.planMeta}>
-        <View style={[styles.goalChip, { backgroundColor: goalColor + '22' }]}>
-          <Text style={[styles.goalChipText, { color: goalColor }]}>
-            {GOAL_LABELS[plan.targetGoal]}
-          </Text>
-        </View>
-        <Text style={styles.metaSep}>·</Text>
+        {plan.targetGoal ? (
+          <View style={[styles.goalChip, { backgroundColor: goalColor + '22' }]}>
+            <Text style={[styles.goalChipText, { color: goalColor }]}>
+              {GOAL_LABELS[plan.targetGoal]}
+            </Text>
+          </View>
+        ) : null}
         <Text style={styles.planTotalKm}>{totalKm} km total</Text>
       </View>
 
-      {/* Week overview */}
       <View style={styles.weekRow}>
         {plan.weeks.map((w, i) => (
           <View key={i} style={styles.weekDot}>
@@ -182,29 +184,41 @@ function PlanCard({
         ))}
       </View>
 
-      {assignMode ? (
-        <TouchableOpacity
-          style={[styles.assignBtn, isAssigning && styles.assignBtnLoading]}
-          onPress={onAssign}
-          disabled={isAssigning}
-        >
+      {!assignMode && (
+        <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
+          <Ionicons name="pencil-outline" size={14} color={Colors.textMuted} />
+          <Text style={styles.editBtnText}>Edit Template</Text>
+        </TouchableOpacity>
+      )}
+
+      {assignMode && (
+        <View style={styles.assignHint}>
           {isAssigning ? (
             <ActivityIndicator size="small" color={Colors.primary} />
           ) : (
             <>
-              <Ionicons name="checkmark-circle-outline" size={16} color={Colors.primary} />
-              <Text style={styles.assignBtnText}>Assign to Athlete</Text>
+              <Ionicons name="checkmark-circle-outline" size={14} color={Colors.primary} />
+              <Text style={styles.assignHintText}>Tap to assign</Text>
             </>
           )}
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
-          <Ionicons name="pencil-outline" size={14} color={Colors.textMuted} />
-          <Text style={styles.editBtnText}>Edit Plan</Text>
-        </TouchableOpacity>
+        </View>
       )}
-    </Card>
+    </View>
   );
+
+  if (assignMode) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.75}
+        onPress={isAssigning ? undefined : onAssign}
+        style={[styles.planCardWrap, isAssigning && { opacity: 0.6 }]}
+      >
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+
+  return <Card style={styles.planCard} padding={0}>{inner}</Card>;
 }
 
 const styles = StyleSheet.create({
@@ -235,13 +249,9 @@ const styles = StyleSheet.create({
   title: { ...Font.h2, color: Colors.text, marginBottom: 12 },
 
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.error + '18',
-    borderRadius: Radius.md,
-    padding: 12,
-    marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.error + '18', borderRadius: Radius.md,
+    padding: 12, marginBottom: 12,
   },
   errorBannerText: { ...Font.small, color: Colors.error, flex: 1 },
 
@@ -260,7 +270,7 @@ const styles = StyleSheet.create({
 
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyTitle: { ...Font.h3, color: Colors.text },
-  emptySub: { ...Font.small, color: Colors.textMuted, textAlign: 'center', maxWidth: 260 },
+  emptySub: { ...Font.small, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
   emptyBtn: {
     marginTop: 8,
     backgroundColor: Colors.primary,
@@ -272,7 +282,15 @@ const styles = StyleSheet.create({
 
   list: { gap: 12 },
 
-  planCard: { gap: 12 },
+  planCardWrap: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.primary + '55',
+  },
+  planCard: {},
+  planCardInner: { padding: 16, gap: 12 },
+
   planTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   planLeft: { flex: 1, gap: 4 },
   planName: { ...Font.h4, color: Colors.text },
@@ -288,7 +306,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   goalChipText: { fontSize: 11, fontWeight: '700' },
-  metaSep: { color: Colors.textMuted },
   planTotalKm: { ...Font.small, color: Colors.textMuted },
 
   weekRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 44 },
@@ -300,27 +317,24 @@ const styles = StyleSheet.create({
   },
   weekDotLabel: { ...Font.tiny, color: Colors.textMuted },
 
-  assignBtn: {
+  assignHint: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: 12,
+    borderTopColor: Colors.primary + '33',
   },
-  assignBtnLoading: { opacity: 0.6 },
-  assignBtnText: { ...Font.body, color: Colors.primary, fontWeight: '600' },
+  assignHintText: { ...Font.small, color: Colors.primary, fontWeight: '600' },
 
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    width: '100%',
   },
   editBtnText: { ...Font.small, color: Colors.textMuted },
 });

@@ -6,6 +6,7 @@ import { useStore } from '@/hooks/useStore';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { Card } from '@/components/ui/Card';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const TYPE_COLORS: Record<string, string> = {
   easy: Colors.easy,
@@ -36,6 +37,13 @@ export default function MyPlanScreen() {
     );
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const planNotStarted = !!athlete.planStartDate && athlete.planStartDate > todayStr;
+  const daysUntilStart = planNotStarted
+    ? Math.round((new Date(athlete.planStartDate!).getTime() - Date.now()) / 86400000)
+    : 0;
+  const planStartDate = athlete.planStartDate ? new Date(athlete.planStartDate) : null;
+
   const totalWeeks = assignedPlan.totalWeeks;
   const currentWeek = viewingWeekIndex + 1;
   const progress = currentWeek / totalWeeks;
@@ -46,6 +54,53 @@ export default function MyPlanScreen() {
       <ScreenHeader title="My Plan" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
+        {planNotStarted ? (
+          <>
+            {/* Countdown card */}
+            <Card style={styles.heroCard} padding={20}>
+              <Text style={styles.planName}>{assignedPlan.name}</Text>
+              {assignedPlan.description ? (
+                <Text style={styles.planDesc}>{assignedPlan.description}</Text>
+              ) : null}
+              <LinearGradient
+                colors={[Colors.primaryFade, Colors.card]}
+                style={styles.countdownBlock}
+              >
+                <Ionicons name="time-outline" size={28} color={Colors.primary} />
+                <Text style={styles.countdownTitle}>
+                  Starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+                </Text>
+                <Text style={styles.countdownDate}>
+                  {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </Text>
+              </LinearGradient>
+              <View style={styles.heroStats}>
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatVal}>{totalWeeks}</Text>
+                  <Text style={styles.heroStatLabel}>Total weeks</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatVal}>{assignedPlan.weeks.reduce((s, w) => s + w.totalKm, 0)}</Text>
+                  <Text style={styles.heroStatLabel}>Total km</Text>
+                </View>
+              </View>
+            </Card>
+
+            {/* Plan overview preview */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Plan Overview</Text>
+              <View style={styles.weeksGrid}>
+                {assignedPlan.weeks.map((_, i) => (
+                  <View key={i} style={styles.weekChip}>
+                    <Text style={styles.weekChipLabel}>W{i + 1}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
         {/* Plan hero */}
         <Card style={styles.heroCard} padding={20}>
           <View style={styles.heroTop}>
@@ -162,6 +217,8 @@ export default function MyPlanScreen() {
           <Text style={styles.viewPlanBtnText}>Open Training Plan</Text>
           <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
         </TouchableOpacity>
+          </>
+        )}
 
       </ScrollView>
     </View>
@@ -197,6 +254,15 @@ const styles = StyleSheet.create({
   progressPct: { ...Font.small, color: Colors.primary, fontWeight: '600' },
   progressTrack: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, backgroundColor: Colors.primary, borderRadius: 3 },
+
+  countdownBlock: {
+    borderRadius: Radius.md,
+    padding: 20,
+    alignItems: 'center',
+    gap: 6,
+  },
+  countdownTitle: { ...Font.h3, color: Colors.text, textAlign: 'center' },
+  countdownDate: { ...Font.body, color: Colors.textMuted, textAlign: 'center' },
 
   heroStats: { flexDirection: 'row', alignItems: 'center', paddingTop: 4 },
   heroStat: { flex: 1, alignItems: 'center', gap: 2 },
