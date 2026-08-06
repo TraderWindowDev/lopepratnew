@@ -5,13 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -77,6 +77,7 @@ function makeStep(stepType: 'warmup' | 'training' | 'rest' | 'cooldown', km?: st
 function dayToStructuredWorkout(day: DayState): StructuredWorkout | undefined {
   if (!day.title || day.type === 'rest') return undefined;
   const activityType: ActivityType = day.type === 'strength' ? 'strength' : 'run';
+  const runType = day.type === 'interval' ? 'interval' : day.type === 'long' ? 'long' : 'easy';
   const km = day.km && parseFloat(day.km) > 0 ? day.km : undefined;
   const pace = day.targetPace || undefined;
 
@@ -85,11 +86,15 @@ function dayToStructuredWorkout(day: DayState): StructuredWorkout | undefined {
     const warmKm = km ? String(Math.max(1, Math.round(parseFloat(km) * 0.2))) : undefined;
     const mainKm = km ? String(Math.round(parseFloat(km) * 0.6)) : undefined;
     steps = [makeStep('warmup', warmKm), makeStep('training', mainKm, pace), makeStep('cooldown', warmKm)];
+  } else if (activityType === 'run' && (runType === 'easy' || runType === 'long')) {
+    // Simple run: convert km to approximate minutes (assume ~6 min/km)
+    const mins = km ? String(Math.round(parseFloat(km) * 6)) : '';
+    steps = mins ? [{ ...makeStep('training', undefined, pace), targetKind: 'time', targetValue: `${mins}:00` }] : [];
   } else if (day.type !== 'strength') {
     steps = [makeStep('training', km, pace)];
   }
 
-  return { activityType, name: day.title, steps };
+  return { activityType, runType: activityType === 'run' ? (runType as any) : undefined, name: day.title, steps };
 }
 
 function makeDefaultDay(_i: number): DayState {
@@ -661,21 +666,25 @@ function WeekStep({
 
 
 const ACTIVITY_COLORS: Partial<Record<ActivityType, string>> = {
-  run: Colors.gold, trail_run: '#C8A843', bike: '#4CAF50',
-  swim: '#2196F3', strength: '#9C27B0', hybrid: '#FF5722',
-  climb: '#00BCD4', boulder: '#FF9800', xc_ski: '#64B5F6',
+  run:         Colors.gold,
+  alternative: '#4CAF50',
+  strength:    '#9C27B0',
+  rest:        Colors.textMuted,
 };
 
 const ACTIVITY_ICONS: Partial<Record<ActivityType, string>> = {
-  run: 'walk-outline', trail_run: 'walk-outline', bike: 'bicycle-outline',
-  swim: 'water-outline', strength: 'barbell-outline', hybrid: 'pulse-outline',
-  climb: 'trending-up-outline', boulder: 'cube-outline', xc_ski: 'snow-outline',
+  run:         'walk-outline',
+  alternative: 'bicycle-outline',
+  strength:    'barbell-outline',
+  rest:        'moon-outline',
 };
 
 function workoutTypeFromActivity(w: StructuredWorkout): WorkoutType {
+  if (w.activityType === 'rest') return 'rest';
   if (w.activityType === 'strength') return 'strength';
-  if (w.steps.some((s) => s.stepType === 'interval')) return 'interval';
-  if (w.steps.some((s) => s.stepType !== 'interval' && s.intensityRange?.toLowerCase().includes('threshold'))) return 'tempo';
+  if (w.runType === 'interval' || w.steps.some((s) => s.stepType === 'interval')) return 'interval';
+  if (w.runType === 'long') return 'long';
+  if (w.steps.some((s) => s.stepType !== 'interval' && (s as any).intensityRange?.toLowerCase().includes('threshold'))) return 'tempo';
   return 'easy';
 }
 
