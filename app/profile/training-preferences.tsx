@@ -21,8 +21,6 @@ const GOALS: { value: GoalType; label: string; sub: string }[] = [
   { value: 'first_10k',     label: '10 km',          sub: 'Øk til 10 kilometer' },
   { value: 'first_half',    label: 'Halvmaraton',    sub: '21,1 km utholdenhetsmål' },
   { value: 'first_marathon',label: 'Maraton',        sub: 'Hele 42,2 km-utfordringen' },
-  { value: 'pb_half',       label: 'Halvmaraton PB', sub: 'Jag en ny personrekord' },
-  { value: 'pb_marathon',   label: 'Maraton PB',     sub: 'Slå maratonrekorden din' },
 ];
 
 // Olympiatoppen-soner — beregnet fra makspuls

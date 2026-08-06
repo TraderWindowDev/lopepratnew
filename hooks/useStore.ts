@@ -116,6 +116,11 @@ async function loadAthleteState(userId: string): Promise<Partial<AppState>> {
   ]);
 
   let assignedPlan: TrainingPlan | null = planRow ? buildPlanFromRow(planRow) : null;
+  if (assignedPlan) {
+    console.log('[store] plan loaded:', assignedPlan.name, '| weeks:', assignedPlan.weeks.length, '| week[0] days:', assignedPlan.weeks[0]?.days.length ?? 0);
+  } else if (athleteRow?.assigned_plan_id) {
+    console.warn('[store] fetchPlan returned null for', athleteRow.assigned_plan_id);
+  }
 
   // Derive current week from start date if available; fall back to stored index
   let weekIndex = athleteRow?.current_plan_week_index ?? 0;
@@ -141,6 +146,7 @@ async function loadAthleteState(userId: string): Promise<Partial<AppState>> {
       l => l.week_index === weekIndex && (l as any).plan_id === planId
     );
     weekPlan = buildWeekPlanFromPlan(assignedPlan, weekIndex, weekLogs);
+    console.log('[store] weekPlan week', weekIndex, '| workouts:', weekPlan.workouts.length);
   }
 
   return { athlete, assignedPlan, viewingWeekIndex: weekIndex, weekPlan, messages, athleteMilestones };

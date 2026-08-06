@@ -215,30 +215,56 @@ function swBaseStepToWorkoutStep(sub: any, idx: number): WorkoutStep {
 }
 
 function swToWorkoutSteps(sw: any): WorkoutStep[] {
-  if (!sw?.steps?.length) return [];
-  return (sw.steps as any[]).map((step, i) => {
+  const result: WorkoutStep[] = [];
+
+  // Interval runs store warmup/cooldown outside steps[] — prepend/append them
+  if (sw?.warmupValue) {
+    result.push({
+      id: 'sw-warmup',
+      type: 'warmup',
+      description: `Oppvarming · ${sw.warmupValue}`,
+      duration: swParseTime(sw.warmupValue) || undefined,
+    });
+  }
+
+  for (const [i, step] of (sw?.steps ?? [] as any[]).entries()) {
     if (step.stepType === 'interval') {
       const subDesc = (step.subSteps ?? [])
         .map((sub: any) => {
-          if (!sub.targetValue) return sub.stepType === 'rest' ? '(rest)' : null;
+          if (!sub.targetValue) return sub.stepType === 'rest' ? '(hvile)' : null;
           return sub.stepType === 'rest' ? `(${sub.targetValue})` : sub.targetValue;
         })
         .filter(Boolean)
         .join(' + ');
-      return {
+      result.push({
         id: step.id ?? `sw-${i}`,
         type: 'repeat' as const,
-        description: subDesc || `${step.subSteps?.length ?? 0} steps`,
+        description: subDesc || `${step.subSteps?.length ?? 0} steg`,
         repeats: step.repeatCount ?? 1,
         steps: (step.subSteps ?? []).map((sub: any, j: number) => swBaseStepToWorkoutStep(sub, j)),
-      };
+      });
+    } else {
+      result.push(swBaseStepToWorkoutStep(step, i));
     }
-    return swBaseStepToWorkoutStep(step, i);
-  });
+  }
+
+  if (sw?.cooldownValue) {
+    result.push({
+      id: 'sw-cooldown',
+      type: 'cooldown',
+      description: `Nedkjøling · ${sw.cooldownValue}`,
+      duration: swParseTime(sw.cooldownValue) || undefined,
+    });
+  }
+
+  return result;
 }
 
 export function swTotalMinutes(sw: any): number {
   let total = 0;
+  // Interval runs store warmup/cooldown as separate top-level fields
+  if (sw?.warmupValue) total += swParseTime(sw.warmupValue);
+  if (sw?.cooldownValue) total += swParseTime(sw.cooldownValue);
   for (const step of sw?.steps ?? []) {
     if (step.stepType === 'interval') {
       const subMin = (step.subSteps ?? []).reduce((s: number, sub: any) => s + swParseTime(sub.targetValue), 0);

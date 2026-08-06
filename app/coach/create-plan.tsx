@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { GOAL_LABELS, type GoalType, type WorkoutType } from '@/constants/mock-data';
-import { createPlan, updatePlan, assignPlan } from '@/lib/api/plans';
+import { createPlan, updatePlan, copyAndAssignPlan } from '@/lib/api/plans';
+import { fetchPlan, buildPlanFromRow } from '@/lib/api/athletes';
 import { useStore } from '@/hooks/useStore';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
@@ -191,6 +192,36 @@ export default function CreatePlanScreen() {
     }));
   });
 
+  // If the plan being edited is a non-template athlete copy it won't be in
+  // coachPlans (which only holds templates). Fetch it directly and populate
+  // form state once it arrives.
+  useEffect(() => {
+    if (!editPlanId || editPlan) return; // already populated from coachPlans
+    fetchPlan(editPlanId).then((row) => {
+      const p = row ? buildPlanFromRow(row) : null;
+      if (!p) return;
+      setName(p.name);
+      setDescription(p.description ?? '');
+      setGoal((p.targetGoal as GoalType) ?? null);
+      setNumWeeks(p.totalWeeks);
+      setWeeks(
+        p.weeks.map((w) => ({
+          phase: w.phase,
+          focus: w.focus ?? '',
+          days: w.days.map((d) => ({
+            type: d.type,
+            title: d.title,
+            km: d.km != null ? String(d.km) : '',
+            notes: d.notes ?? '',
+            targetPace: d.targetPace ?? '',
+            coachNote: d.coachNote ?? '',
+            structuredWorkout: d.structuredWorkout,
+          })),
+        }))
+      );
+    }).catch(() => {});
+  }, [editPlanId]);
+
   const totalSteps = numWeeks + 1; // 0 = meta, 1..N = weeks
 
   function getWeek(i: number): WeekState {
@@ -253,7 +284,7 @@ export default function CreatePlanScreen() {
       } else {
         const planId = await createPlan(planInput);
         if (assignTo) {
-          await assignPlan(assignTo, planId);
+          await copyAndAssignPlan(assignTo, planId);
         }
       }
 

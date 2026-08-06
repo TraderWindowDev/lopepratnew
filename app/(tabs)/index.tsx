@@ -304,21 +304,6 @@ export default function HomeScreen() {
             </Card>
           )}
 
-          {/* Quick links */}
-          <View style={styles.quickLinks}>
-            {[
-              { icon: 'videocam-outline', label: 'Siste video', color: Colors.purple },
-              { icon: 'mic-outline', label: 'Ny podcast', color: Colors.primary },
-              { icon: 'document-text-outline', label: 'Treningstips', color: Colors.teal },
-            ].map((item) => (
-              <TouchableOpacity key={item.label} style={styles.quickLink} activeOpacity={0.8}>
-                <View style={[styles.quickIcon, { backgroundColor: item.color + '22' }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
-                </View>
-                <Text style={styles.quickLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -421,8 +406,4 @@ const styles = StyleSheet.create({
   raceCountNum: { ...Font.h1, color: Colors.gold },
   raceCountLabel: { ...Font.label, color: Colors.textMuted, marginTop: 2 },
 
-  quickLinks: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  quickLink: { flex: 1, alignItems: 'center', gap: 8 },
-  quickIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  quickLabel: { ...Font.tiny, color: Colors.textSecondary, textAlign: 'center' },
 });

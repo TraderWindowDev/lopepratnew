@@ -15,7 +15,6 @@ import { GOAL_LABELS } from '@/constants/mock-data';
 import { Card } from '@/components/ui/Card';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { BarChart } from '@/components/charts/BarChart';
-import { LineChart } from '@/components/charts/LineChart';
 
 const { width } = Dimensions.get('window');
 const CHART_W = width - Spacing.md * 2 - 32;
@@ -29,7 +28,6 @@ export default function ProgressScreen() {
   const achievedMilestones = athleteMilestones.filter((m) => m.achieved);
   const goalProgress = athlete.complianceRate / 100;
   const hasHistory = athlete.weeklyMileageHistory.length > 0;
-  const hasPaceHistory = athlete.paceHistory.length > 0;
 
   return (
     <View style={styles.container}>
@@ -88,7 +86,7 @@ export default function ProgressScreen() {
                 style={[styles.tab, activeTab === tab && styles.tabActive]}
               >
                 <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
-                  {tab === 'pbs' ? 'PR' : tab === 'overview' ? 'Oversikt' : 'Milepæler'}
+                  {tab === 'pbs' ? 'PR' : tab === 'overview' ? 'Oversikt' : 'Mål'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -143,24 +141,6 @@ export default function ProgressScreen() {
                 )}
               </Card>
 
-              {/* Pace trend */}
-              <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.chartTitle}>Lett-tempo-trend</Text>
-                <Text style={styles.chartSubtitle}>Min/km — forbedring = lavere verdi</Text>
-                {hasPaceHistory ? (
-                  <LineChart
-                    data={athlete.paceHistory}
-                    color={Colors.teal}
-                    width={CHART_W}
-                    height={120}
-                    inverted={true}
-                  />
-                ) : (
-                  <View style={styles.chartEmpty}>
-                    <Text style={styles.chartEmptyText}>Pace-trend vises etter første loggede løp</Text>
-                  </View>
-                )}
-              </Card>
             </View>
           )}
 
@@ -169,8 +149,8 @@ export default function ProgressScreen() {
               {athleteMilestones.length === 0 ? (
                 <Card style={styles.emptyCard} padding={24}>
                   <Ionicons name="trophy-outline" size={36} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>Ingen milepæler ennå</Text>
-                  <Text style={styles.emptySub}>Milepæler vises her etter hvert som du trener. Fortsett!</Text>
+                  <Text style={styles.emptyTitle}>Ingen mål ennå</Text>
+                  <Text style={styles.emptySub}>Mål vises her etter hvert som du trener. Fortsett!</Text>
                 </Card>
               ) : (
               <>

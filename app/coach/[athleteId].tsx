@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '@/hooks/useStore';
 import { unassignPlan, updatePlanStartDate } from '@/lib/api/plans';
-import { fetchPersonalBests, fetchAllWorkoutLogs, computeAthleteStats } from '@/lib/api/athletes';
+import { fetchPlan, buildPlanFromRow, fetchPersonalBests, fetchAllWorkoutLogs, computeAthleteStats } from '@/lib/api/athletes';
+import type { TrainingPlan } from '@/constants/mock-data';
 import { fetchRaceResults, type RaceResult } from '@/lib/api/race-results';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
 import { GOAL_LABELS, AthleteStatus, WorkoutType, type Athlete } from '@/constants/mock-data';
@@ -47,10 +48,11 @@ const WEEK_LABELS = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10'
 export default function AthleteDetailScreen() {
   const { athleteId } = useLocalSearchParams<{ athleteId: string }>();
   const router = useRouter();
-  const { coachAthletes, coachPlans, refreshCoachAthletes } = useStore();
+  const { coachAthletes, refreshCoachAthletes } = useStore();
   const [coachNote, setCoachNote] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'plan' | 'notes'>('overview');
   const [selectedPlanWeek, setSelectedPlanWeek] = useState(0);
+  const [assignedPlan, setAssignedPlan] = useState<TrainingPlan | null>(null);
   const [removing, setRemoving] = useState(false);
   const [savingStartDate, setSavingStartDate] = useState(false);
   const [startDateError, setStartDateError] = useState('');
@@ -88,9 +90,16 @@ export default function AthleteDetailScreen() {
   }, [athleteId]);
 
   const athlete = coachAthletes.find((a) => a.id === athleteId);
-  const assignedPlan = athlete?.assignedPlanId
-    ? coachPlans.find((p) => p.id === athlete.assignedPlanId) ?? null
-    : null;
+
+  // Fetch the athlete's assigned plan directly — it may be a non-template copy
+  // that isn't in coachPlans (which only holds is_template=true plans).
+  useEffect(() => {
+    const planId = athlete?.assignedPlanId;
+    if (!planId) { setAssignedPlan(null); return; }
+    fetchPlan(planId)
+      .then((row) => setAssignedPlan(row ? buildPlanFromRow(row) : null))
+      .catch(() => setAssignedPlan(null));
+  }, [athlete?.assignedPlanId]);
 
   const currentPlanWeek = (() => {
     if (!assignedPlan || !athlete?.planStartDate) return athlete?.currentPlanWeekIndex ?? 0;
