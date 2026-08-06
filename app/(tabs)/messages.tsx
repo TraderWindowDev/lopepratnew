@@ -110,7 +110,7 @@ export default function MessagesScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -152,9 +152,6 @@ export default function MessagesScreen() {
 
         {/* Input */}
         <View style={styles.inputRow}>
-          <TouchableOpacity style={styles.attachBtn}>
-            <Ionicons name="add-circle-outline" size={26} color={Colors.textSecondary} />
-          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={text}
@@ -246,9 +243,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     gap: 8,
     backgroundColor: Colors.surface,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
-  attachBtn: { paddingBottom: 4 },
   input: {
     flex: 1,
     backgroundColor: Colors.card,
