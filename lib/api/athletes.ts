@@ -189,7 +189,7 @@ function swHrZone(kind: string, range: string): number | undefined {
 }
 
 function swBaseStepLabel(stepType: string): string {
-  const map: Record<string, string> = { warmup: 'Warm Up', training: 'Training', rest: 'Rest', cooldown: 'Cool Down' };
+  const map: Record<string, string> = { warmup: 'Oppvarming', training: 'Løping', rest: 'Hvile', cooldown: 'Nedkjøling' };
   return map[stepType] ?? stepType;
 }
 
@@ -256,7 +256,7 @@ export function buildSubtitle(d: PlanDay): string {
   if (d.structuredWorkout) {
     const totalMin = swTotalMinutes(d.structuredWorkout);
     const count = (d.structuredWorkout.steps as any[])?.length ?? 0;
-    return `${count} step${count !== 1 ? 's' : ''}${totalMin > 0 ? ` · ~${totalMin} min` : ''}`;
+    return `${count} steg${totalMin > 0 ? ` · ~${totalMin} min` : ''}`;
   }
   if (d.type === 'interval' && d.notes) return d.notes;
   if (d.km && d.notes) return `${d.km} km — ${d.notes}`;
@@ -279,15 +279,15 @@ export function generateWorkoutSteps(d: PlanDay): WorkoutStep[] {
       const distNum = parseFloat(distStr);
       const warmupKm = 3;
       return [
-        { id: 's1', type: 'warmup', description: `${warmupKm} km warmup + strides`, distance: warmupKm, pace: '6:30/km' },
+        { id: 's1', type: 'warmup', description: `${warmupKm} km oppvarming + strides`, distance: warmupKm, pace: '6:30/km' },
         {
           id: 's2', type: 'repeat', description: `${distStr}${pace ? ` @ ${pace}` : ''}`, repeats: reps,
           steps: [
-            { id: 'r1', type: 'main', description: `${distStr} hard`, distance: distNum, pace: pace || undefined, heartRateZone: 5 },
+            { id: 'r1', type: 'main', description: `${distStr} hardt`, distance: distNum, pace: pace || undefined, heartRateZone: 5 },
             ...(rec ? [{ id: 'r2', type: 'main' as const, description: rec, duration: 1.5, pace: '7:00/km' }] : []),
           ],
         },
-        { id: 's3', type: 'cooldown', description: `${warmupKm} km cooldown`, distance: warmupKm, pace: '6:30/km' },
+        { id: 's3', type: 'cooldown', description: `${warmupKm} km nedkjøling`, distance: warmupKm, pace: '6:30/km' },
       ];
     }
   }
@@ -316,8 +316,8 @@ export function generateWorkoutSteps(d: PlanDay): WorkoutStep[] {
     id: 's1',
     type: 'main',
     description: km
-      ? `${km} km ${type === 'easy' ? 'easy run' : type === 'long' ? 'long run' : type}`
-      : 'Workout',
+      ? `${km} km ${type === 'easy' ? 'lett løp' : type === 'long' ? 'langturt' : type}`
+      : 'Økt',
     distance: km,
     pace: targetPace,
     heartRateZone: type === 'long' ? 2 : type === 'easy' ? 2 : 3,
@@ -395,7 +395,7 @@ export function buildWeekPlanFromPlan(
         targetPace: d.targetPace,
         steps: generateWorkoutSteps(d),
         completed: !!log,
-        coachNote: d.coachNote,
+        coachNote: d.structuredWorkout?.description || d.coachNote,
         actual: log?.distance
           ? {
               distance: log.distance!,

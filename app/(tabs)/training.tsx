@@ -301,6 +301,12 @@ export default function TrainingScreen() {
                             </View>
                           )}
                         </View>
+                        {w.coachNote && !w.completed && (
+                          <View style={styles.coachNoteRow}>
+                            <Ionicons name="chatbubble-outline" size={12} color={Colors.primary} />
+                            <Text style={styles.coachNoteText} numberOfLines={2}>{w.coachNote}</Text>
+                          </View>
+                        )}
                         {w.actual && (
                           <View style={styles.actualRow}>
                             <Ionicons name="checkmark-circle" size={12} color={Colors.success} />

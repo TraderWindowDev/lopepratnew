@@ -103,7 +103,7 @@ export default function AthleteDetailScreen() {
   })();
   const planEndDate = assignedPlan && athlete?.planStartDate
     ? new Date(new Date(athlete.planStartDate).getTime() + assignedPlan.totalWeeks * 7 * 86400000)
-      .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      .toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 
   async function handleRemovePlan() {

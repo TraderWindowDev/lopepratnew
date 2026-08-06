@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -24,24 +24,24 @@ import { Card } from '@/components/ui/Card';
 import { WorkoutBuilderModal, type StructuredWorkout, type ActivityType } from '@/components/workout/WorkoutBuilderModal';
 
 const GOALS: { value: GoalType; label: string }[] = [
-  { value: 'first_5k', label: 'First 5K' },
-  { value: 'first_10k', label: 'First 10K' },
-  { value: 'first_half', label: 'First Half Marathon' },
-  { value: 'first_marathon', label: 'First Marathon' },
-  { value: 'pb_half', label: 'Half Marathon PB' },
-  { value: 'pb_marathon', label: 'Marathon PB' },
+  { value: 'first_5k', label: '5 km for første gang' },
+  { value: 'first_10k', label: '10 km for første gang' },
+  { value: 'first_half', label: 'Halvmaraton for første gang' },
+  { value: 'first_marathon', label: 'Maraton for første gang' },
+  { value: 'pb_half', label: 'Halvmaraton PR' },
+  { value: 'pb_marathon', label: 'Maraton PR' },
 ];
 
 const WORKOUT_TYPES: { value: WorkoutType; label: string; color: string }[] = [
-  { value: 'rest', label: 'Rest', color: Colors.rest },
-  { value: 'easy', label: 'Easy', color: Colors.easy },
-  { value: 'long', label: 'Long', color: Colors.long },
+  { value: 'rest', label: 'Hvile', color: Colors.rest },
+  { value: 'easy', label: 'Lett', color: Colors.easy },
+  { value: 'long', label: 'Lang', color: Colors.long },
   { value: 'tempo', label: 'Tempo', color: Colors.tempo },
-  { value: 'interval', label: 'Interval', color: Colors.interval },
-  { value: 'strength', label: 'Strength', color: Colors.teal },
+  { value: 'interval', label: 'Intervall', color: Colors.interval },
+  { value: 'strength', label: 'Styrke', color: Colors.teal },
 ];
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_LABELS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 
 type DayState = {
   type: WorkoutType;
@@ -100,7 +100,7 @@ function dayToStructuredWorkout(day: DayState): StructuredWorkout | undefined {
 function makeDefaultDay(_i: number): DayState {
   return {
     type: 'rest',
-    title: 'Rest',
+    title: 'Hvile',
     km: '',
     notes: '',
     targetPace: '',
@@ -110,7 +110,7 @@ function makeDefaultDay(_i: number): DayState {
 
 function makeDefaultWeek(i: number): WeekState {
   return {
-    phase: i === 0 ? 'Base Building' : i === 1 ? 'Development' : i === 2 ? 'Peak' : 'Taper',
+    phase: i === 0 ? 'Grunntrening' : i === 1 ? 'Utvikling' : i === 2 ? 'Toppform' : 'Nedtrapping',
     focus: '',
     days: DAY_LABELS.map((_, di) => makeDefaultDay(di)),
   };
@@ -281,10 +281,10 @@ export default function CreatePlanScreen() {
             style={styles.backBtn}
           >
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
-            <Text style={styles.backText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
+            <Text style={styles.backText}>{step === 0 ? 'Avbryt' : 'Tilbake'}</Text>
           </TouchableOpacity>
           <Text style={styles.navTitle}>
-            {step === 0 ? (editPlanId ? 'Edit Plan' : 'New Plan') : `Week ${step} of ${numWeeks}`}
+            {step === 0 ? (editPlanId ? 'Rediger plan' : 'Ny plan') : `Uke ${step} av ${numWeeks}`}
           </Text>
           <View style={styles.navRight}>
             {step < totalSteps - 1 ? (
@@ -294,7 +294,7 @@ export default function CreatePlanScreen() {
                 onPress={() => setStep(step + 1)}
               >
                 <Text style={styles.nextBtnText}>
-                  {step === totalSteps - 2 ? 'Review' : 'Next'}
+                  {step === totalSteps - 2 ? 'Gjennomgang' : 'Neste'}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
               </TouchableOpacity>
@@ -369,15 +369,15 @@ export default function CreatePlanScreen() {
           {step === numWeeks && (
             <View style={styles.reviewSection}>
               <Card style={styles.reviewCard} padding={16}>
-                <Text style={styles.reviewTitle}>Plan Summary</Text>
+                <Text style={styles.reviewTitle}>Planoverskrift</Text>
                 <Text style={styles.reviewName}>{name}</Text>
                 {description ? <Text style={styles.reviewDesc}>{description}</Text> : null}
                 <View style={styles.reviewMeta}>
-                  <Text style={styles.reviewMetaText}>{numWeeks} weeks{goal ? ` · ${GOAL_LABELS[goal]}` : ''}</Text>
+                  <Text style={styles.reviewMetaText}>{numWeeks} uker{goal ? ` · ${GOAL_LABELS[goal]}` : ''}</Text>
                   <Text style={styles.reviewMetaText}>
                     {Array.from({ length: numWeeks }, (_, i) => weekTotalKm(i))
                       .reduce((a, b) => a + b, 0)
-                      .toFixed(0)} km total
+                      .toFixed(0)} km totalt
                   </Text>
                 </View>
               </Card>
@@ -386,7 +386,7 @@ export default function CreatePlanScreen() {
                 <View style={styles.assignNote}>
                   <Ionicons name="person-circle-outline" size={16} color={Colors.primary} />
                   <Text style={styles.assignNoteText}>
-                    Will be assigned to {athlete.name}
+                    Tildeles {athlete.name}
                   </Text>
                 </View>
               )}
@@ -409,7 +409,7 @@ export default function CreatePlanScreen() {
                   <>
                     <Ionicons name="checkmark-circle" size={18} color="#fff" />
                     <Text style={styles.saveBtnText}>
-                      {editPlanId ? 'Update Plan' : assignTo ? 'Save & Assign' : 'Save Plan'}
+                      {editPlanId ? 'Oppdater plan' : assignTo ? 'Lagre og tildel' : 'Lagre plan'}
                     </Text>
                   </>
                 )}
@@ -435,7 +435,7 @@ function MetaStep({
 }) {
   return (
     <View style={styles.metaContainer}>
-      <Text style={styles.stepTitle}>Plan Details</Text>
+      <Text style={styles.stepTitle}>Plandetaljer</Text>
       {athlete && (
         <View style={styles.forAthleteTag}>
           <Ionicons name="person-outline" size={13} color={Colors.primary} />
@@ -444,24 +444,24 @@ function MetaStep({
       )}
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Plan Name</Text>
+        <Text style={styles.fieldLabel}>Plannavn</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={onName}
-          placeholder="e.g. Chicago Marathon 16-Week"
+          placeholder="f.eks. Chicago maraton 16 uker"
           placeholderTextColor={Colors.textMuted}
           autoFocus
         />
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Description (optional)</Text>
+        <Text style={styles.fieldLabel}>Beskrivelse (valgfritt)</Text>
         <TextInput
           style={[styles.input, styles.inputMulti]}
           value={description}
           onChangeText={onDescription}
-          placeholder="What's this plan designed to achieve?"
+          placeholder="Hva er målet med denne planen?"
           placeholderTextColor={Colors.textMuted}
           multiline
           numberOfLines={3}
@@ -469,7 +469,7 @@ function MetaStep({
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Target Goal <Text style={{ color: Colors.textMuted, fontWeight: '400' }}>(optional)</Text></Text>
+        <Text style={styles.fieldLabel}>Målsetting <Text style={{ color: Colors.textMuted, fontWeight: '400' }}>(valgfritt)</Text></Text>
         <View style={styles.goalGrid}>
           {GOALS.map((g) => (
             <TouchableOpacity
@@ -486,7 +486,7 @@ function MetaStep({
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Number of Weeks</Text>
+        <Text style={styles.fieldLabel}>Antall uker</Text>
         <View style={styles.weekStepper}>
           <TouchableOpacity
             style={styles.stepperBtn}
@@ -497,7 +497,7 @@ function MetaStep({
           </TouchableOpacity>
           <View style={styles.stepperVal}>
             <Text style={styles.stepperNum}>{numWeeks}</Text>
-            <Text style={styles.stepperLabel}>weeks</Text>
+            <Text style={styles.stepperLabel}>uker</Text>
           </View>
           <TouchableOpacity
             style={styles.stepperBtn}
@@ -508,13 +508,13 @@ function MetaStep({
           </TouchableOpacity>
         </View>
         <Text style={styles.weekHint}>
-          {numWeeks <= 4 ? 'Good for a focused block' : numWeeks <= 8 ? 'Standard training block' : numWeeks <= 16 ? 'Full marathon build' : 'Extended multi-cycle'}
+          {numWeeks <= 4 ? 'Bra for et fokusert treningsblokk' : numWeeks <= 8 ? 'Standard treningsblokk' : numWeeks <= 16 ? 'Full maratonoppbygging' : 'Utvidet fler-syklus'}
         </Text>
       </View>
 
       <TouchableOpacity style={styles.aiBtn} onPress={onGenerateAI} activeOpacity={0.8}>
         <Ionicons name="sparkles" size={16} color={Colors.primary} />
-        <Text style={styles.aiBtnText}>Generate with AI</Text>
+        <Text style={styles.aiBtnText}>Generer med KI</Text>
       </TouchableOpacity>
     </View>
   );
@@ -537,7 +537,7 @@ function GenerateAIModal({
           <View style={styles.aiModalHeader}>
             <View style={styles.aiModalTitle}>
               <Ionicons name="sparkles" size={20} color={Colors.primary} />
-              <Text style={styles.aiModalTitleText}>AI Plan Generator</Text>
+              <Text style={styles.aiModalTitleText}>KI-plangenerator</Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Ionicons name="close" size={22} color={Colors.textSecondary} />
@@ -546,7 +546,7 @@ function GenerateAIModal({
 
           <View style={styles.aiModalSummary}>
             <View style={styles.aiModalChip}>
-              <Text style={styles.aiModalChipText}>{numWeeks} weeks</Text>
+              <Text style={styles.aiModalChipText}>{numWeeks} uker</Text>
             </View>
             {goal && (
               <View style={styles.aiModalChip}>
@@ -555,15 +555,15 @@ function GenerateAIModal({
             )}
           </View>
 
-          <Text style={styles.aiModalLabel}>Tell me about the athlete</Text>
+          <Text style={styles.aiModalLabel}>Fortell meg om utøveren</Text>
           <Text style={styles.aiModalHint}>
-            Injury history, available training days, current fitness, any specific requirements…
+            Skadehistorikk, tilgjengelige treningsdager, nåværende form, spesielle krav…
           </Text>
           <TextInput
             style={styles.aiModalInput}
             value={notes}
             onChangeText={onNotesChange}
-            placeholder="e.g. Intermediate runner, 5 days/week, recovering from knee injury, targeting sub-4hr marathon"
+            placeholder="f.eks. Erfaren løper, 5 dager/uke, restituerer etter knesskade, sikter på sub-4t maraton"
             placeholderTextColor={Colors.textMuted}
             multiline
             numberOfLines={5}
@@ -587,19 +587,19 @@ function GenerateAIModal({
             {generating ? (
               <>
                 <ActivityIndicator color="#fff" size="small" />
-                <Text style={styles.aiGenerateBtnText}>Generating…</Text>
+                <Text style={styles.aiGenerateBtnText}>Genererer…</Text>
               </>
             ) : (
               <>
                 <Ionicons name="sparkles" size={18} color="#fff" />
-                <Text style={styles.aiGenerateBtnText}>Generate Plan</Text>
+                <Text style={styles.aiGenerateBtnText}>Generer plan</Text>
               </>
             )}
           </TouchableOpacity>
 
           {generating && (
             <Text style={styles.aiGeneratingNote}>
-              This takes 10–20 seconds. The AI will build all {numWeeks} weeks — you can edit anything after.
+              Dette tar 10–20 sekunder. KI bygger alle {numWeeks} uker — du kan redigere alt etterpå.
             </Text>
           )}
         </View>
@@ -620,7 +620,7 @@ function WeekStep({
   return (
     <View style={styles.weekContainer}>
       <View style={styles.weekHeader}>
-        <Text style={styles.stepTitle}>Week {weekIndex + 1}</Text>
+        <Text style={styles.stepTitle}>Uke {weekIndex + 1}</Text>
         <View style={styles.kmBadge}>
           <Text style={styles.kmBadgeNum}>{totalKm.toFixed(0)}</Text>
           <Text style={styles.kmBadgeLabel}>km</Text>
@@ -628,28 +628,28 @@ function WeekStep({
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Phase</Text>
+        <Text style={styles.fieldLabel}>Fase</Text>
         <TextInput
           style={styles.input}
           value={week.phase}
           onChangeText={(v) => onUpdate({ phase: v })}
-          placeholder="e.g. Base Building, Peak, Taper..."
+          placeholder="f.eks. Grunntrening, Toppform, Nedtrapping..."
           placeholderTextColor={Colors.textMuted}
         />
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Focus (optional)</Text>
+        <Text style={styles.fieldLabel}>Fokus (valgfritt)</Text>
         <TextInput
           style={styles.input}
           value={week.focus}
           onChangeText={(v) => onUpdate({ focus: v })}
-          placeholder="e.g. Aerobic base, long run confidence..."
+          placeholder="f.eks. Aerob base, langturskonfidans..."
           placeholderTextColor={Colors.textMuted}
         />
       </View>
 
-      <Text style={styles.fieldLabel}>Daily Workouts</Text>
+      <Text style={styles.fieldLabel}>Daglige treningsøkter</Text>
       <View style={styles.dayList}>
         {DAY_LABELS.map((label, i) => (
           <DayRow
@@ -672,12 +672,6 @@ const ACTIVITY_COLORS: Partial<Record<ActivityType, string>> = {
   rest:        Colors.textMuted,
 };
 
-const ACTIVITY_ICONS: Partial<Record<ActivityType, string>> = {
-  run:         'walk-outline',
-  alternative: 'bicycle-outline',
-  strength:    'barbell-outline',
-  rest:        'moon-outline',
-};
 
 function workoutTypeFromActivity(w: StructuredWorkout): WorkoutType {
   if (w.activityType === 'rest') return 'rest';
@@ -730,7 +724,7 @@ function DayRow({
             <View style={styles.dayRowInfo}>
               <Text style={styles.dayRowTitle} numberOfLines={1}>{sw.name}</Text>
               <Text style={styles.dayRowMeta} numberOfLines={1}>
-                {sw.steps.length} {sw.steps.length === 1 ? 'step' : 'steps'}
+                {sw.steps.length} {sw.steps.length === 1 ? 'steg' : 'steg'}
                 {sw.steps.length > 0 ? '  ·  ' + sw.steps.map(s => s.stepType === 'interval' ? `x${s.repeatCount}` : s.targetValue).join(' + ') : ''}
               </Text>
             </View>

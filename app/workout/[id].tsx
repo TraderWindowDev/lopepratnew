@@ -69,7 +69,7 @@ export default function WorkoutDetailScreen() {
           targetPace: day.targetPace,
           steps: generateWorkoutSteps(day),
           completed: false,
-          coachNote: day.coachNote,
+          coachNote: day.structuredWorkout?.description || day.coachNote,
         };
       }
     }

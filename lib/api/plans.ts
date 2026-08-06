@@ -52,7 +52,7 @@ export async function fetchAthletePlan(athleteId: string) {
         plan_weeks (
           id, week_index, phase, focus, total_km,
           plan_days (
-            id, day_index, day_label, workout_type, title, km, notes
+            id, day_index, day_label, workout_type, title, km, notes, target_pace, coach_note
           )
         )
       )
