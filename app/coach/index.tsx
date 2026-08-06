@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,19 +19,19 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 
 const STATUS_CONFIG: Record<AthleteStatus, { color: string; label: string; icon: string }> = {
-  excellent: { color: Colors.success, label: 'Excellent', icon: 'trending-up' },
-  on_track: { color: Colors.teal, label: 'On track', icon: 'checkmark-circle' },
-  needs_attention: { color: Colors.warning, label: 'Attention', icon: 'warning' },
-  injured: { color: Colors.error, label: 'Injured', icon: 'medkit' },
+  excellent: { color: Colors.success, label: 'Utmerket', icon: 'trending-up' },
+  on_track: { color: Colors.teal, label: 'På sporet', icon: 'checkmark-circle' },
+  needs_attention: { color: Colors.warning, label: 'Trenger tilsyn', icon: 'warning' },
+  injured: { color: Colors.error, label: 'Skadet', icon: 'medkit' },
 };
 
-const FILTER_OPTS = ['All', 'Excellent', 'On track', 'Attention needed'];
+const FILTER_OPTS = ['Alle', 'Utmerket', 'På sporet', 'Trenger tilsyn'];
 
 export default function CoachDashboard() {
   const router = useRouter();
   const { logout, coachAthletes, coachPlans, refreshCoachAthletes, refreshCoachPlans } = useStore();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState('Alle');
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
@@ -50,10 +50,10 @@ export default function CoachDashboard() {
   const filtered = coachAthletes.filter((a) => {
     const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter =
-      filter === 'All' ||
-      (filter === 'Excellent' && a.status === 'excellent') ||
-      (filter === 'On track' && a.status === 'on_track') ||
-      (filter === 'Attention needed' && a.status === 'needs_attention');
+      filter === 'Alle' ||
+      (filter === 'Utmerket' && a.status === 'excellent') ||
+      (filter === 'På sporet' && a.status === 'on_track') ||
+      (filter === 'Trenger tilsyn' && a.status === 'needs_attention');
     return matchesSearch && matchesFilter;
   });
 
@@ -81,7 +81,7 @@ export default function CoachDashboard() {
           <View style={styles.header}>
             <View>
               <Text style={styles.eyebrow}>LOPEPRAT COACHING</Text>
-              <Text style={styles.title}>Coach Dashboard</Text>
+              <Text style={styles.title}>Treningsverktøy</Text>
             </View>
             <TouchableOpacity
               style={styles.logoutBtn}
@@ -95,22 +95,22 @@ export default function CoachDashboard() {
           <View style={styles.summaryRow}>
             <Card style={styles.summaryCard} padding={14}>
               <Text style={styles.summaryNum}>{coachAthletes.length}</Text>
-              <Text style={styles.summaryLabel}>Athletes</Text>
+              <Text style={styles.summaryLabel}>Utøvere</Text>
             </Card>
             <Card style={[styles.summaryCard, alertCount > 0 ? styles.alertCard : undefined]} padding={14}>
               <View style={styles.alertRow}>
                 <Text style={[styles.summaryNum, alertCount > 0 ? { color: Colors.warning } : undefined]}>{alertCount}</Text>
                 {alertCount > 0 && <Ionicons name="warning" size={14} color={Colors.warning} />}
               </View>
-              <Text style={styles.summaryLabel}>Need attention</Text>
+              <Text style={styles.summaryLabel}>Trenger tilsyn</Text>
             </Card>
             <Card style={styles.summaryCard} padding={14}>
               <Text style={[styles.summaryNum, { color: Colors.success }]}>{avgCompliance}%</Text>
-              <Text style={styles.summaryLabel}>Avg compliance</Text>
+              <Text style={styles.summaryLabel}>Snitt-etterlevelse</Text>
             </Card>
             <Card style={styles.summaryCard} padding={14}>
               <Text style={[styles.summaryNum, { color: Colors.gold }]}>{excellentCount}</Text>
-              <Text style={styles.summaryLabel}>Excellent</Text>
+              <Text style={styles.summaryLabel}>Utmerket</Text>
             </Card>
           </View>
 
@@ -126,9 +126,9 @@ export default function CoachDashboard() {
                   <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
                 </View>
                 <View>
-                  <Text style={styles.plansCount}>{coachPlans.length} Training Plan{coachPlans.length !== 1 ? 's' : ''}</Text>
+                  <Text style={styles.plansCount}>{coachPlans.length} treningsplan{coachPlans.length !== 1 ? 'er' : ''}</Text>
                   <Text style={styles.plansSubtitle}>
-                    {coachPlans.length === 0 ? 'No plans yet' : coachPlans.slice(0, 2).map(p => p.name).join(' · ')}
+                    {coachPlans.length === 0 ? 'Ingen planer ennå' : coachPlans.slice(0, 2).map(p => p.name).join(' · ')}
                   </Text>
                 </View>
               </View>
@@ -140,7 +140,7 @@ export default function CoachDashboard() {
               activeOpacity={0.85}
             >
               <Ionicons name="add" size={22} color={Colors.primary} />
-              <Text style={styles.newPlanText}>New</Text>
+              <Text style={styles.newPlanText}>Ny</Text>
             </TouchableOpacity>
           </View>
 
@@ -148,13 +148,13 @@ export default function CoachDashboard() {
           {alertCount > 0 && (
             <TouchableOpacity
               style={styles.alertBanner}
-              onPress={() => setFilter('Attention needed')}
+              onPress={() => setFilter('Trenger tilsyn')}
               activeOpacity={0.8}
             >
               <View style={styles.alertBannerLeft}>
                 <Ionicons name="warning" size={18} color={Colors.warning} />
                 <Text style={styles.alertBannerText}>
-                  {alertCount} athlete{alertCount > 1 ? 's' : ''} may need your attention
+                  {alertCount} utøver{alertCount > 1 ? 'e' : ''} trenger kanskje tilsyn
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={Colors.warning} />
@@ -169,7 +169,7 @@ export default function CoachDashboard() {
                 style={styles.searchText}
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search athletes..."
+                placeholder="Søk etter utøvere..."
                 placeholderTextColor={Colors.textMuted}
               />
               {search.length > 0 && (
@@ -201,7 +201,7 @@ export default function CoachDashboard() {
 
           {/* Athlete list */}
           <Text style={styles.listHeader}>
-            {filtered.length} athlete{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} utøver{filtered.length !== 1 ? 'e' : ''}
           </Text>
 
           <View style={styles.athleteList}>
@@ -245,7 +245,7 @@ function AthleteRow({ athlete, onPress }: { athlete: Athlete; onPress: () => voi
           {GOAL_LABELS[athlete.goal]}{athlete.targetRace.name ? ` · ${athlete.targetRace.name}` : ''}
         </Text>
         <Text style={styles.athleteMeta}>
-          {daysUntilRace !== null ? `${daysUntilRace}d to race · ` : ''}{athlete.complianceRate}% compliance
+          {daysUntilRace !== null ? `${daysUntilRace}d til løp · ` : ''}{athlete.complianceRate}% etterlevelse
         </Text>
 
         {/* Week mileage bar */}

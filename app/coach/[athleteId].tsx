@@ -5,13 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   Dimensions,
   Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -108,12 +108,12 @@ export default function AthleteDetailScreen() {
 
   async function handleRemovePlan() {
     Alert.alert(
-      'Remove Training Plan',
-      `Remove "${assignedPlan?.name}" from ${athlete?.name}? Their progress will be reset.`,
+      'Fjern treningsplan',
+      `Fjerne "${assignedPlan?.name}" fra ${athlete?.name}? Fremgangen deres vil bli tilbakestilt.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Avbryt', style: 'cancel' },
         {
-          text: 'Remove',
+          text: 'Fjern',
           style: 'destructive',
           onPress: async () => {
             setRemoving(true);
@@ -121,7 +121,7 @@ export default function AthleteDetailScreen() {
               await unassignPlan(athleteId!);
               await refreshCoachAthletes();
             } catch (e: any) {
-              Alert.alert('Error', e.message ?? 'Failed to remove plan');
+              Alert.alert('Feil', e.message ?? 'Klarte ikke fjerne plan');
             } finally {
               setRemoving(false);
             }
@@ -138,7 +138,7 @@ export default function AthleteDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.navbar}>
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={{ color: Colors.textSecondary, padding: 16 }}>Athlete not found</Text>
+          <Text style={{ color: Colors.textSecondary, padding: 16 }}>Utøver ikke funnet</Text>
         </SafeAreaView>
       </View>
     );
@@ -161,7 +161,7 @@ export default function AthleteDetailScreen() {
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
-            <Text style={styles.backText}>Athletes</Text>
+            <Text style={styles.backText}>Utøvere</Text>
           </TouchableOpacity>
           <View style={styles.navActions}>
             <TouchableOpacity style={styles.navBtn} onPress={() => router.push({ pathname: '/coach/chat-athlete', params: { athleteId } })}>
@@ -190,7 +190,7 @@ export default function AthleteDetailScreen() {
             <View style={styles.streakBlock}>
               <Ionicons name="flame" size={18} color={Colors.primary} />
               <Text style={styles.streakNum}>{athlete.streak}</Text>
-              <Text style={styles.streakLabel}>streak</Text>
+              <Text style={styles.streakLabel}>rekke</Text>
             </View>
           </View>
 
@@ -205,10 +205,10 @@ export default function AthleteDetailScreen() {
           {/* Quick stats */}
           <View style={styles.quickStats}>
             {[
-              { label: 'Compliance', value: `${athlete.complianceRate}%`, color: athlete.complianceRate > 80 ? Colors.success : Colors.warning },
-              { label: 'Days to race', value: `${daysUntilRace}`, color: Colors.gold },
-              { label: 'This week', value: `${athlete.currentWeekMileage}km`, color: Colors.primary },
-              { label: 'Target/week', value: `${athlete.weeklyMileageTarget}km`, color: Colors.textSecondary },
+              { label: 'Etterlevelse', value: `${athlete.complianceRate}%`, color: athlete.complianceRate > 80 ? Colors.success : Colors.warning },
+              { label: 'Dager til løp', value: `${daysUntilRace}`, color: Colors.gold },
+              { label: 'Denne uken', value: `${athlete.currentWeekMileage}km`, color: Colors.primary },
+              { label: 'Mål/uke', value: `${athlete.weeklyMileageTarget}km`, color: Colors.textSecondary },
             ].map((s) => (
               <Card key={s.label} style={styles.quickStatCard} padding={12}>
                 <Text style={[styles.quickStatVal, { color: s.color }]}>{s.value}</Text>
@@ -225,17 +225,17 @@ export default function AthleteDetailScreen() {
                 <Text style={styles.raceTitle}>{athlete.targetRace.name}</Text>
               </View>
               <Text style={styles.raceMeta}>
-                {new Date(athlete.targetRace.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {new Date(athlete.targetRace.date).toLocaleDateString('nb-NO', { month: 'long', day: 'numeric', year: 'numeric' })}
                 {athlete.targetRace.location ? ` · ${athlete.targetRace.location}` : ''}
               </Text>
               <View style={styles.raceCountdown}>
                 <View style={styles.raceCountItem}>
                   <Text style={styles.raceCountNum}>{Math.floor(daysUntilRace / 7)}</Text>
-                  <Text style={styles.raceCountLabel}>weeks</Text>
+                  <Text style={styles.raceCountLabel}>uker</Text>
                 </View>
                 <View style={styles.raceCountItem}>
                   <Text style={styles.raceCountNum}>{daysUntilRace % 7}</Text>
-                  <Text style={styles.raceCountLabel}>days</Text>
+                  <Text style={styles.raceCountLabel}>dager</Text>
                 </View>
               </View>
             </Card>
@@ -250,7 +250,7 @@ export default function AthleteDetailScreen() {
                 onPress={() => setActiveTab(tab)}
               >
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'overview' ? 'Oversikt' : tab === 'plan' ? 'Plan' : 'Notater'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -260,19 +260,19 @@ export default function AthleteDetailScreen() {
             <View style={styles.section}>
               {/* PBs */}
               <Card style={styles.pbCard} padding={16}>
-                <Text style={styles.cardTitle}>Personal Bests</Text>
+                <Text style={styles.cardTitle}>Personrekorder</Text>
                 {!detailData && (
                   <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
                 )}
                 {detailData?.personalBests.length === 0 && (
-                  <Text style={styles.emptyText}>No personal bests recorded yet</Text>
+                  <Text style={styles.emptyText}>Ingen personrekorder registrert ennå</Text>
                 )}
                 {detailData?.personalBests.map((pb) => (
                   <View key={pb.distance} style={styles.pbRow}>
                     <Text style={styles.pbDist}>{pb.distance}</Text>
                     <Text style={styles.pbTime}>{pb.time}</Text>
                     <Text style={styles.pbDate}>
-                      {new Date(pb.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      {new Date(pb.date).toLocaleDateString('nb-NO', { month: 'short', year: 'numeric' })}
                     </Text>
                   </View>
                 ))}
@@ -280,12 +280,12 @@ export default function AthleteDetailScreen() {
 
               {/* Mileage chart */}
               <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.cardTitle}>Weekly Mileage (km)</Text>
+                <Text style={styles.cardTitle}>Ukentlig kilometersum (km)</Text>
                 {!detailData && (
                   <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
                 )}
                 {detailData && detailData.weeklyMileageHistory.length === 0 && (
-                  <Text style={styles.emptyText}>No workouts logged yet</Text>
+                  <Text style={styles.emptyText}>Ingen treningsøkter logget ennå</Text>
                 )}
                 {detailData && detailData.weeklyMileageHistory.length > 0 && (
                   <BarChart
@@ -300,9 +300,9 @@ export default function AthleteDetailScreen() {
 
               {/* Pace trend */}
               <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.cardTitle}>Easy Pace Trend</Text>
+                <Text style={styles.cardTitle}>Lett-tempo-trend</Text>
                 {detailData && detailData.paceHistory.length === 0 && (
-                  <Text style={styles.emptyText}>No pace data yet</Text>
+                  <Text style={styles.emptyText}>Ingen pace-data ennå</Text>
                 )}
                 {detailData && detailData.paceHistory.length > 0 && (
                   <LineChart
@@ -317,19 +317,19 @@ export default function AthleteDetailScreen() {
 
               {/* Race Results */}
               <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.cardTitle}>Race Results</Text>
+                <Text style={styles.cardTitle}>Løpsresultater</Text>
                 {!detailData && (
                   <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
                 )}
                 {detailData?.raceResults.length === 0 && (
-                  <Text style={styles.emptyText}>No race results logged yet</Text>
+                  <Text style={styles.emptyText}>Ingen løpsresultater logget ennå</Text>
                 )}
                 {detailData?.raceResults.map((r) => (
                   <View key={r.id} style={styles.raceResultRow}>
                     <View style={styles.raceResultLeft}>
                       <Text style={styles.raceResultName} numberOfLines={1}>{r.raceName}</Text>
                       <Text style={styles.raceResultDate}>
-                        {new Date(r.raceDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {new Date(r.raceDate).toLocaleDateString('nb-NO', { month: 'short', day: 'numeric', year: 'numeric' })}
                         {r.distance ? ` · ${r.distance}` : ''}
                       </Text>
                       {r.notes ? <Text style={styles.raceResultNotes} numberOfLines={2}>"{r.notes}"</Text> : null}
@@ -360,9 +360,9 @@ export default function AthleteDetailScreen() {
                     <View style={styles.planCompleteBanner}>
                       <Ionicons name="trophy" size={18} color={Colors.gold} />
                       <View style={styles.planCompleteText}>
-                        <Text style={styles.planCompleteTitle}>Plan Complete!</Text>
+                        <Text style={styles.planCompleteTitle}>Plan fullført!</Text>
                         <Text style={styles.planCompleteSub}>
-                          {athlete.name} finished all {assignedPlan.totalWeeks} weeks. Assign a new plan to continue.
+                          {athlete.name} fullførte alle {assignedPlan.totalWeeks} uker. Tildel en ny plan for å fortsette.
                         </Text>
                       </View>
                     </View>
@@ -377,19 +377,19 @@ export default function AthleteDetailScreen() {
                       </View>
                       <View style={styles.planWeekCount}>
                         <Text style={styles.planWeekCountNum}>{assignedPlan.totalWeeks}</Text>
-                        <Text style={styles.planWeekCountLabel}>weeks</Text>
+                        <Text style={styles.planWeekCountLabel}>uker</Text>
                       </View>
                     </View>
                     <View style={styles.planMeta}>
                       <Text style={styles.planMetaText}>
                         {planComplete
-                          ? 'Completed'
-                          : `Week ${currentPlanWeek + 1} of ${assignedPlan.totalWeeks}`}
+                          ? 'Fullført'
+                          : `Uke ${currentPlanWeek + 1} av ${assignedPlan.totalWeeks}`}
                       </Text>
                       {planEndDate && !planComplete ? (
                         <>
                           <View style={styles.planMetaDot} />
-                          <Text style={styles.planMetaText}>ends {planEndDate}</Text>
+                          <Text style={styles.planMetaText}>slutter {planEndDate}</Text>
                         </>
                       ) : null}
                     </View>
@@ -400,14 +400,14 @@ export default function AthleteDetailScreen() {
                         <Ionicons name="calendar-outline" size={13} color={Colors.textMuted} />
                         <Text style={styles.startDateLabel}>
                           {athlete.planStartDate
-                            ? `Started ${new Date(athlete.planStartDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                            : 'Plan start date not set'}
+                            ? `Startet ${new Date(athlete.planStartDate).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                            : 'Startdato ikke satt'}
                         </Text>
                       </View>
                       <View style={styles.startDateBtns}>
-                        {(['Today', 'Next Monday'] as const).map((label) => {
+                        {(['I dag', 'Neste mandag'] as const).map((label) => {
                           const d = new Date();
-                          if (label === 'Next Monday') {
+                          if (label === 'Neste mandag') {
                             const day = d.getDay();
                             d.setDate(d.getDate() + (day === 0 ? 1 : 8 - day));
                           }
@@ -473,14 +473,14 @@ export default function AthleteDetailScreen() {
                         onPress={() => router.push(`/coach/plans?assignTo=${athleteId}`)}
                       >
                         <Ionicons name="swap-horizontal-outline" size={13} color={Colors.textMuted} />
-                        <Text style={styles.changePlanBtnText}>Change plan</Text>
+                        <Text style={styles.changePlanBtnText}>Endre plan</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.changePlanBtn}
                         onPress={() => router.push(`/coach/create-plan?planId=${assignedPlan.id}`)}
                       >
                         <Ionicons name="pencil-outline" size={13} color={Colors.primary} />
-                        <Text style={[styles.changePlanBtnText, { color: Colors.primary }]}>Edit plan</Text>
+                        <Text style={[styles.changePlanBtnText, { color: Colors.primary }]}>Rediger plan</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.changePlanBtn}
@@ -491,7 +491,7 @@ export default function AthleteDetailScreen() {
                           ? <ActivityIndicator size="small" color={Colors.error} />
                           : <Ionicons name="trash-outline" size={13} color={Colors.error} />
                         }
-                        <Text style={[styles.changePlanBtnText, { color: Colors.error }]}>Remove</Text>
+                        <Text style={[styles.changePlanBtnText, { color: Colors.error }]}>Fjern</Text>
                       </TouchableOpacity>
                     </View>
                   </Card>
@@ -545,7 +545,7 @@ export default function AthleteDetailScreen() {
                       <Card style={styles.planCard} padding={16}>
                         <View style={styles.planWeekHeader}>
                           <View>
-                            <Text style={styles.cardTitle}>Week {selectedPlanWeek + 1} — {week.phase}</Text>
+                            <Text style={styles.cardTitle}>Uke {selectedPlanWeek + 1} — {week.phase}</Text>
                             <Text style={styles.planFocus}>{week.focus}</Text>
                           </View>
                           <View style={styles.planKmBadge}>
@@ -601,8 +601,8 @@ export default function AthleteDetailScreen() {
                               ) : null}
                               {isDone && (log?.distance || log?.effort_rating) ? (
                                 <View style={styles.logMetaRow}>
-                                  {log?.distance ? <Text style={styles.logMeta}>{log.distance} km logged</Text> : null}
-                                  {log?.effort_rating ? <Text style={styles.logMeta}>· effort {log.effort_rating}/10</Text> : null}
+                                  {log?.distance ? <Text style={styles.logMeta}>{log.distance} km logget</Text> : null}
+                                  {log?.effort_rating ? <Text style={styles.logMeta}>· anstrengelse {log.effort_rating}/10</Text> : null}
                                 </View>
                               ) : null}
                             </View>
@@ -611,7 +611,7 @@ export default function AthleteDetailScreen() {
 
                         <TouchableOpacity style={styles.assignBtn}>
                           <Ionicons name="send-outline" size={14} color={Colors.primary} />
-                          <Text style={styles.assignBtnText}>Push Week {selectedPlanWeek + 1} to athlete</Text>
+                          <Text style={styles.assignBtnText}>Send uke {selectedPlanWeek + 1} til utøver</Text>
                         </TouchableOpacity>
                       </Card>
                     );
@@ -620,14 +620,14 @@ export default function AthleteDetailScreen() {
               ) : (
                 <Card style={styles.noPlanCard} padding={24}>
                   <Ionicons name="calendar-outline" size={32} color={Colors.textMuted} />
-                  <Text style={styles.noPlanTitle}>No plan assigned</Text>
-                  <Text style={styles.noPlanSub}>Assign an existing plan or create a new one for this athlete.</Text>
+                  <Text style={styles.noPlanTitle}>Ingen plan tildelt</Text>
+                  <Text style={styles.noPlanSub}>Tildel en eksisterende plan eller opprett en ny for denne utøveren.</Text>
                   <TouchableOpacity
                     style={styles.assignBtn}
                     onPress={() => router.push(`/coach/plans?assignTo=${athleteId}`)}
                   >
                     <Ionicons name="add-circle-outline" size={14} color={Colors.primary} />
-                    <Text style={styles.assignBtnText}>Assign Plan</Text>
+                    <Text style={styles.assignBtnText}>Tildel plan</Text>
                   </TouchableOpacity>
                 </Card>
               )}
@@ -637,20 +637,20 @@ export default function AthleteDetailScreen() {
           {activeTab === 'notes' && (
             <View style={styles.section}>
               <Card style={styles.noteCard} padding={16}>
-                <Text style={styles.cardTitle}>Coaching Notes</Text>
+                <Text style={styles.cardTitle}>Trenernotater</Text>
                 <Text style={styles.existingNote}>{athlete.coachNote}</Text>
                 <View style={styles.noteMeta}>
-                  <Text style={styles.noteMetaText}>Last updated · Today</Text>
+                  <Text style={styles.noteMetaText}>Sist oppdatert · I dag</Text>
                 </View>
               </Card>
 
               <Card style={styles.addNoteCard} padding={16}>
-                <Text style={styles.fieldLabel}>Add note</Text>
+                <Text style={styles.fieldLabel}>Legg til notat</Text>
                 <TextInput
                   style={styles.noteInput}
                   value={coachNote}
                   onChangeText={setCoachNote}
-                  placeholder="Session observation, plan change, conversation note..."
+                  placeholder="Øktobservasjon, planendring, samtalnotat..."
                   placeholderTextColor={Colors.textMuted}
                   multiline
                   numberOfLines={4}
@@ -660,17 +660,17 @@ export default function AthleteDetailScreen() {
                   disabled={!coachNote.trim()}
                   onPress={() => setCoachNote('')}
                 >
-                  <Text style={styles.saveNoteBtnText}>Save Note</Text>
+                  <Text style={styles.saveNoteBtnText}>Lagre notat</Text>
                 </TouchableOpacity>
               </Card>
 
               {/* Quick templates */}
-              <Text style={styles.templatesTitle}>Quick templates</Text>
+              <Text style={styles.templatesTitle}>Hurtigmaler</Text>
               {[
-                'Great session — ahead of target 💪',
-                'Ease up next week — monitor fatigue',
-                'Ready to test a faster tempo pace',
-                'Schedule check-in call this week',
+                'Flott økt — foran målsetningen 💪',
+                'Rolig neste uke — følg med på utmattelse',
+                'Klar for å teste raskere tempopace',
+                'Planlegg oppfølgingssamtale denne uken',
               ].map((t) => (
                 <TouchableOpacity
                   key={t}
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
   templateText: { ...Font.small, color: Colors.textSecondary, flex: 1 },
 });
 
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTH_NAMES = ['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
 const CAL_CELL = 38;
 
 function CalendarPicker({
@@ -1013,7 +1013,7 @@ function CalendarPicker({
             </TouchableOpacity>
           </View>
           <View style={calStyles.dayHeaders}>
-            {['M','T','W','T','F','S','S'].map((d, i) => (
+            {['M','T','O','T','F','L','S'].map((d, i) => (
               <Text key={i} style={calStyles.dayHeader}>{d}</Text>
             ))}
           </View>

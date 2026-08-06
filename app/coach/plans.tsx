@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
@@ -69,18 +69,18 @@ export default function PlansScreen() {
             }
           >
             <Ionicons name="add" size={18} color={Colors.primary} />
-            <Text style={styles.createBtnText}>New Plan</Text>
+            <Text style={styles.createBtnText}>Ny plan</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-          <Text style={styles.title}>{assignTo ? 'Select Template' : 'Plan Templates'}</Text>
+          <Text style={styles.title}>{assignTo ? 'Velg mal' : 'Planmaler'}</Text>
 
           {assignTo && (
             <View style={styles.assignBanner}>
               <Ionicons name="person-outline" size={14} color={Colors.primary} />
               <Text style={styles.assignBannerText}>
-                Tap a template to assign to {athlete?.name ?? 'athlete'}
+                Trykk på en mal for å tildele til {athlete?.name ?? 'utøver'}
               </Text>
             </View>
           )}
@@ -94,10 +94,10 @@ export default function PlansScreen() {
           {coachPlans.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="layers-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>No templates yet</Text>
+              <Text style={styles.emptyTitle}>Ingen maler ennå</Text>
               <Text style={styles.emptySub}>
-                Create a plan template. When you assign it to an athlete, they get their own
-                independent copy — edits to their plan never change the template.
+                Opprett en planmal. Når du tildeler den til en utøver, får de sin egen
+                uavhengige kopi — endringer i deres plan påvirker aldri malen.
               </Text>
               <TouchableOpacity
                 style={styles.emptyBtn}
@@ -105,7 +105,7 @@ export default function PlansScreen() {
                   router.push(assignTo ? `/coach/create-plan?assignTo=${assignTo}` : '/coach/create-plan')
                 }
               >
-                <Text style={styles.emptyBtnText}>Create Template</Text>
+                <Text style={styles.emptyBtnText}>Opprett mal</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -155,7 +155,7 @@ function PlanCard({
         </View>
         <View style={styles.planWeekBadge}>
           <Text style={styles.planWeekNum}>{plan.totalWeeks}</Text>
-          <Text style={styles.planWeekLabel}>wks</Text>
+          <Text style={styles.planWeekLabel}>uker</Text>
         </View>
       </View>
 
@@ -167,7 +167,7 @@ function PlanCard({
             </Text>
           </View>
         ) : null}
-        <Text style={styles.planTotalKm}>{totalKm} km total</Text>
+        <Text style={styles.planTotalKm}>{totalKm} km totalt</Text>
       </View>
 
       <View style={styles.weekRow}>
@@ -187,7 +187,7 @@ function PlanCard({
       {!assignMode && (
         <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
           <Ionicons name="pencil-outline" size={14} color={Colors.textMuted} />
-          <Text style={styles.editBtnText}>Edit Template</Text>
+          <Text style={styles.editBtnText}>Rediger mal</Text>
         </TouchableOpacity>
       )}
 
@@ -198,7 +198,7 @@ function PlanCard({
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={14} color={Colors.primary} />
-              <Text style={styles.assignHintText}>Tap to assign</Text>
+              <Text style={styles.assignHintText}>Trykk for å tildele</Text>
             </>
           )}
         </View>

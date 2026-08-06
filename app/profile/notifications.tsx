@@ -15,20 +15,20 @@ interface NotifSetting {
 }
 
 const TRAINING_NOTIFS: NotifSetting[] = [
-  { key: 'workout_reminder', icon: 'alarm-outline', label: 'Workout Reminders', sub: 'Daily reminder before your scheduled session', color: Colors.primary },
-  { key: 'rest_day', icon: 'moon-outline', label: 'Rest Day Nudge', sub: 'Reminder to recover on scheduled rest days', color: Colors.teal },
-  { key: 'weekly_summary', icon: 'bar-chart-outline', label: 'Weekly Summary', sub: 'Every Sunday — your week in review', color: Colors.purple },
+  { key: 'workout_reminder', icon: 'alarm-outline', label: 'Treningspåminnelse', sub: 'Daglig påminnelse før planlagt økt', color: Colors.primary },
+  { key: 'rest_day', icon: 'moon-outline', label: 'Hviledag-påminnelse', sub: 'Påminnelse om å restituere på hviledag', color: Colors.teal },
+  { key: 'weekly_summary', icon: 'bar-chart-outline', label: 'Ukesammendrag', sub: 'Hver søndag — uken oppsummert', color: Colors.purple },
 ];
 
 const COACH_NOTIFS: NotifSetting[] = [
-  { key: 'coach_message', icon: 'chatbubble-outline', label: 'Coach Messages', sub: 'New messages from your coach', color: Colors.primary },
-  { key: 'plan_update', icon: 'calendar-outline', label: 'Plan Updates', sub: 'When your coach modifies your training plan', color: Colors.gold },
-  { key: 'coach_note', icon: 'document-text-outline', label: 'Coach Notes', sub: 'Feedback added to your workouts', color: Colors.teal },
+  { key: 'coach_message', icon: 'chatbubble-outline', label: 'Meldinger fra trener', sub: 'Nye meldinger fra treneren din', color: Colors.primary },
+  { key: 'plan_update', icon: 'calendar-outline', label: 'Planoppdateringer', sub: 'Når treneren din endrer treningsplanen din', color: Colors.gold },
+  { key: 'coach_note', icon: 'document-text-outline', label: 'Trenernotater', sub: 'Tilbakemeldinger lagt til øktene dine', color: Colors.teal },
 ];
 
 const RACE_NOTIFS: NotifSetting[] = [
-  { key: 'race_countdown', icon: 'flag-outline', label: 'Race Countdown', sub: '7 days, 3 days and 1 day before race day', color: Colors.gold },
-  { key: 'race_day', icon: 'trophy-outline', label: 'Race Day', sub: 'Good luck message on race morning', color: Colors.primary },
+  { key: 'race_countdown', icon: 'flag-outline', label: 'Nedtelling til løp', sub: '7 dager, 3 dager og 1 dag før løpsdag', color: Colors.gold },
+  { key: 'race_day', icon: 'trophy-outline', label: 'Løpsdag', sub: 'Lykke-til-melding på løpsmorgen', color: Colors.primary },
 ];
 
 const DEFAULT_SETTINGS: Record<string, boolean> = {
@@ -87,7 +87,7 @@ export default function NotificationsScreen() {
   if (!loaded) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Notifications" />
+        <ScreenHeader title="Varsler" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.primary} />
         </View>
@@ -97,24 +97,24 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Notifications" />
+      <ScreenHeader title="Varsler" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         <View style={styles.summaryBanner}>
           <Ionicons name="notifications" size={18} color={Colors.primary} />
           <Text style={styles.summaryText}>
-            {activeCount} notification{activeCount !== 1 ? 's' : ''} enabled
+            {activeCount} varsel{activeCount !== 1 ? 'er' : ''} aktivert
           </Text>
         </View>
 
-        {renderSection('TRAINING', TRAINING_NOTIFS)}
-        {renderSection('COACH', COACH_NOTIFS)}
-        {renderSection('RACE', RACE_NOTIFS)}
+        {renderSection('TRENING', TRAINING_NOTIFS)}
+        {renderSection('TRENER', COACH_NOTIFS)}
+        {renderSection('LØP', RACE_NOTIFS)}
 
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} />
           <Text style={styles.noteText}>
-            Notification preferences are saved on this device. Push notifications require the app to be installed natively.
+            Varselinnstillinger lagres på denne enheten. Push-varsler krever at appen er installert lokalt.
           </Text>
         </View>
 

@@ -36,7 +36,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Today',
+          title: 'I dag',
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} color={color} size={22} />
           ),
@@ -54,7 +54,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Progress',
+          title: 'Fremgang',
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon name={focused ? 'bar-chart' : 'bar-chart-outline'} focused={focused} color={color} size={22} />
           ),
@@ -74,9 +74,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: 'More',
+          title: 'Profil',
           tabBarIcon: ({ focused, color, size }) => (
-            <TabIcon name={focused ? 'grid' : 'grid-outline'} focused={focused} color={color} size={22} />
+            <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} color={color} size={22} />
           ),
         }}
       />

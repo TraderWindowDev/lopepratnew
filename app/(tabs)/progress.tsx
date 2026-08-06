@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
 import { Colors, Font, Spacing, Radius } from '@/constants/theme';
@@ -37,7 +37,7 @@ export default function ProgressScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Progress</Text>
+            <Text style={styles.title}>Fremgang</Text>
             <Text style={styles.subtitle}>{GOAL_LABELS[athlete.goal]}</Text>
           </View>
 
@@ -50,7 +50,7 @@ export default function ProgressScreen() {
                 progress={goalProgress}
                 color={Colors.primary}
                 label={`${Math.round(goalProgress * 100)}%`}
-                sublabel="to goal"
+                sublabel="til mål"
               />
               <View style={styles.goalInfo}>
                 <Text style={styles.goalLabel}>{GOAL_LABELS[athlete.goal]}</Text>
@@ -62,7 +62,7 @@ export default function ProgressScreen() {
                     </View>
                     {athlete.targetRace.date ? (
                       <Text style={styles.goalRaceDate}>
-                        {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
+                        {new Date(athlete.targetRace.date).toLocaleDateString('nb-NO', {
                           month: 'long',
                           day: 'numeric',
                           year: 'numeric',
@@ -73,7 +73,7 @@ export default function ProgressScreen() {
                 ) : null}
                 <View style={styles.goalStreak}>
                   <Ionicons name="flame" size={14} color={Colors.primary} />
-                  <Text style={styles.goalStreakText}>{athlete.streak}-day training streak</Text>
+                  <Text style={styles.goalStreakText}>{athlete.streak} dagers treningsrekke</Text>
                 </View>
               </View>
             </View>
@@ -88,7 +88,7 @@ export default function ProgressScreen() {
                 style={[styles.tab, activeTab === tab && styles.tabActive]}
               >
                 <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
-                  {tab === 'pbs' ? 'PBs' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'pbs' ? 'PR' : tab === 'overview' ? 'Oversikt' : 'Milepæler'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -99,10 +99,10 @@ export default function ProgressScreen() {
               {/* Key stats */}
               <View style={styles.statsGrid}>
                 {[
-                  { label: 'Compliance', value: `${athlete.complianceRate}%`, icon: 'checkmark-circle-outline', color: Colors.success },
-                  { label: 'This week', value: `${athlete.currentWeekMileage} km`, icon: 'map-outline', color: Colors.primary },
-                  { label: 'Weekly target', value: `${athlete.weeklyMileageTarget} km`, icon: 'trending-up-outline', color: Colors.gold },
-                  { label: 'Since joined', value: '148 days', icon: 'calendar-outline', color: Colors.purple },
+                  { label: 'Etterlevelse', value: `${athlete.complianceRate}%`, icon: 'checkmark-circle-outline', color: Colors.success },
+                  { label: 'Denne uken', value: `${athlete.currentWeekMileage} km`, icon: 'map-outline', color: Colors.primary },
+                  { label: 'Ukentlig mål', value: `${athlete.weeklyMileageTarget} km`, icon: 'trending-up-outline', color: Colors.gold },
+                  { label: 'Siden start', value: '148 dager', icon: 'calendar-outline', color: Colors.purple },
                 ].map((stat) => (
                   <Card key={stat.label} style={styles.statCard} padding={14}>
                     <Ionicons name={stat.icon as any} size={20} color={stat.color} />
@@ -114,8 +114,8 @@ export default function ProgressScreen() {
 
               {/* Mileage chart */}
               <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.chartTitle}>Weekly Mileage (km)</Text>
-                <Text style={styles.chartSubtitle}>Last 12 weeks</Text>
+                <Text style={styles.chartTitle}>Ukentlig kilometersum (km)</Text>
+                <Text style={styles.chartSubtitle}>Siste 12 uker</Text>
                 {hasHistory ? (
                   <>
                     <BarChart
@@ -127,10 +127,10 @@ export default function ProgressScreen() {
                     />
                     <View style={styles.chartFooter}>
                       <Text style={styles.chartStat}>
-                        Peak: <Text style={{ color: Colors.primary }}>{Math.max(...athlete.weeklyMileageHistory)} km</Text>
+                        Topp: <Text style={{ color: Colors.primary }}>{Math.max(...athlete.weeklyMileageHistory)} km</Text>
                       </Text>
                       <Text style={styles.chartStat}>
-                        Avg: <Text style={{ color: Colors.textSecondary }}>
+                        Snitt: <Text style={{ color: Colors.textSecondary }}>
                           {(athlete.weeklyMileageHistory.reduce((a, b) => a + b, 0) / athlete.weeklyMileageHistory.length).toFixed(0)} km
                         </Text>
                       </Text>
@@ -138,15 +138,15 @@ export default function ProgressScreen() {
                   </>
                 ) : (
                   <View style={styles.chartEmpty}>
-                    <Text style={styles.chartEmptyText}>Log runs to see your mileage trend</Text>
+                    <Text style={styles.chartEmptyText}>Logg løp for å se km-trenden din</Text>
                   </View>
                 )}
               </Card>
 
               {/* Pace trend */}
               <Card style={styles.chartCard} padding={16}>
-                <Text style={styles.chartTitle}>Easy Pace Trend</Text>
-                <Text style={styles.chartSubtitle}>Min/km — improving = lower value</Text>
+                <Text style={styles.chartTitle}>Lett-tempo-trend</Text>
+                <Text style={styles.chartSubtitle}>Min/km — forbedring = lavere verdi</Text>
                 {hasPaceHistory ? (
                   <LineChart
                     data={athlete.paceHistory}
@@ -157,7 +157,7 @@ export default function ProgressScreen() {
                   />
                 ) : (
                   <View style={styles.chartEmpty}>
-                    <Text style={styles.chartEmptyText}>Pace trend will appear after your first logged run</Text>
+                    <Text style={styles.chartEmptyText}>Pace-trend vises etter første loggede løp</Text>
                   </View>
                 )}
               </Card>
@@ -169,13 +169,13 @@ export default function ProgressScreen() {
               {athleteMilestones.length === 0 ? (
                 <Card style={styles.emptyCard} padding={24}>
                   <Ionicons name="trophy-outline" size={36} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No milestones yet</Text>
-                  <Text style={styles.emptySub}>Milestones will appear here as you train. Keep going!</Text>
+                  <Text style={styles.emptyTitle}>Ingen milepæler ennå</Text>
+                  <Text style={styles.emptySub}>Milepæler vises her etter hvert som du trener. Fortsett!</Text>
                 </Card>
               ) : (
               <>
               <Text style={styles.sectionHeader}>
-                {achievedMilestones.length}/{athleteMilestones.length} achieved
+                {achievedMilestones.length}/{athleteMilestones.length} oppnådd
               </Text>
               {athleteMilestones.map((m) => (
                 <Card key={m.id} style={[styles.milestoneCard, m.achieved ? styles.milestoneAchieved : undefined]} padding={16}>
@@ -193,7 +193,7 @@ export default function ProgressScreen() {
                     <Text style={styles.milestoneSub}>{m.description}</Text>
                     {m.achievedDate && (
                       <Text style={styles.milestoneDate}>
-                        ✓ {new Date(m.achievedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        ✓ {new Date(m.achievedDate).toLocaleDateString('nb-NO', { month: 'short', day: 'numeric' })}
                       </Text>
                     )}
                   </View>
@@ -207,19 +207,19 @@ export default function ProgressScreen() {
 
           {activeTab === 'pbs' && (
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Personal Bests</Text>
+              <Text style={styles.sectionHeader}>Personrekorder</Text>
               {athlete.personalBests.length === 0 ? (
                 <Card style={styles.emptyCard} padding={24}>
                   <Ionicons name="medal-outline" size={36} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No PBs recorded yet</Text>
-                  <Text style={styles.emptySub}>Your coach will add your personal bests here as you race.</Text>
+                  <Text style={styles.emptyTitle}>Ingen PR-er registrert ennå</Text>
+                  <Text style={styles.emptySub}>Treneren din legger til personrekordene dine her etter løp.</Text>
                 </Card>
               ) : athlete.personalBests.map((pb) => (
                 <Card key={pb.distance} style={styles.pbCard} padding={16}>
                   <View>
                     <Text style={styles.pbDistance}>{pb.distance}</Text>
                     <Text style={styles.pbDate}>
-                      {pb.date ? new Date(pb.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}
+                      {pb.date ? new Date(pb.date).toLocaleDateString('nb-NO', { month: 'long', year: 'numeric' }) : ''}
                     </Text>
                   </View>
                   <Text style={styles.pbTime}>{pb.time}</Text>
@@ -229,7 +229,7 @@ export default function ProgressScreen() {
               <Card style={styles.goalTimeCard} padding={20}>
                 <View style={styles.goalTimeHeader}>
                   <Ionicons name="trophy-outline" size={20} color={Colors.gold} />
-                  <Text style={styles.goalTimeTitle}>Target Time</Text>
+                  <Text style={styles.goalTimeTitle}>Målstid</Text>
                 </View>
                 <Text style={styles.goalTimeValue}>3:55:00</Text>
                 <Text style={styles.goalTimeSub}>Marathon · Chicago · Oct 2026</Text>
@@ -237,7 +237,7 @@ export default function ProgressScreen() {
                   <View style={styles.goalTimeBar}>
                     <View style={[styles.goalTimeFill, { width: '62%' }]} />
                   </View>
-                  <Text style={styles.goalTimePercent}>62% there</Text>
+                  <Text style={styles.goalTimePercent}>62 % oppnådd</Text>
                 </View>
               </Card>
             </View>

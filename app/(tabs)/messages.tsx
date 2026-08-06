@@ -6,11 +6,11 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
@@ -58,16 +58,16 @@ export default function MessagesScreen() {
 
   const formatTime = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     const today = new Date();
     const diff = Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Yesterday';
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diff === 0) return 'I dag';
+    if (diff === 1) return 'I går';
+    return d.toLocaleDateString('nb-NO', { month: 'short', day: 'numeric' });
   };
 
   const renderItem = ({ item, index }: { item: typeof messages[0]; index: number }) => {
@@ -126,7 +126,7 @@ export default function MessagesScreen() {
               ))}
             </View>
             <View style={{ marginLeft: 60 }}>
-              <Text style={styles.headerTitle}>Lopeprat Coaches</Text>
+              <Text style={styles.headerTitle}>Lopeprat-trenere</Text>
             </View>
           </View>
           <Ionicons name="ellipsis-horizontal" size={20} color={Colors.textSecondary} />
@@ -159,7 +159,7 @@ export default function MessagesScreen() {
             style={styles.input}
             value={text}
             onChangeText={setText}
-            placeholder="Message your coaches..."
+            placeholder="Skriv til trenerne dine..."
             placeholderTextColor={Colors.textMuted}
             multiline
             maxLength={500}

@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +29,7 @@ const WORKOUT_COLORS: Record<WorkoutType, string> = {
   strength: Colors.teal,
 };
 
-const HR_ZONE_LABELS = ['', 'Z1 Recovery', 'Z2 Easy', 'Z3 Tempo', 'Z4 Threshold', 'Z5 Max'];
+const HR_ZONE_LABELS = ['', 'S1 Restitusjon', 'S2 Lett', 'S3 Tempo', 'S4 Terskel', 'S5 Maks'];
 const HR_ZONE_COLORS = ['', Colors.rest, Colors.easy, Colors.tempo, Colors.interval, Colors.race];
 
 export default function WorkoutDetailScreen() {
@@ -82,7 +82,7 @@ export default function WorkoutDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.notFound}>Workout not found</Text>
+          <Text style={styles.notFound}>Økt ikke funnet</Text>
         </SafeAreaView>
       </View>
     );
@@ -139,7 +139,7 @@ export default function WorkoutDetailScreen() {
         <View style={styles.stepContent}>
           <View style={styles.stepTop}>
             <Text style={styles.stepTypeTag}>
-              {step.type === 'warmup' ? 'Warmup' : step.type === 'cooldown' ? 'Cooldown' : 'Main'}
+              {step.type === 'warmup' ? 'Oppvarming' : step.type === 'cooldown' ? 'Nedkjøling' : 'Hoveddrag'}
             </Text>
             {hrZone && (
               <View style={[styles.hrBadge, { backgroundColor: HR_ZONE_COLORS[hrZone] + '22' }]}>
@@ -179,12 +179,12 @@ export default function WorkoutDetailScreen() {
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>Tilbake</Text>
           </TouchableOpacity>
           {!workout.completed && (
             <TouchableOpacity style={[styles.logBtn, { backgroundColor: accentColor }]} onPress={() => setShowLogModal(true)}>
               <Ionicons name="add" size={16} color="#fff" />
-              <Text style={styles.logBtnText}>Log Run</Text>
+              <Text style={styles.logBtnText}>Registrer løp</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -212,12 +212,12 @@ export default function WorkoutDetailScreen() {
               {workout.targetPace && (
                 <View style={[styles.metric, (workout.targetDistance || workout.targetDuration) ? styles.metricBorder : undefined]}>
                   <Text style={[styles.metricValue, { color: accentColor }]}>{workout.targetPace}</Text>
-                  <Text style={styles.metricLabel}>target pace</Text>
+                  <Text style={styles.metricLabel}>målpace</Text>
                 </View>
               )}
               <View style={[styles.metric, (workout.targetDistance || workout.targetDuration || workout.targetPace) ? styles.metricBorder : undefined]}>
                 <Text style={styles.metricValue}>{workout.steps.length || '—'}</Text>
-                <Text style={styles.metricLabel}>steps</Text>
+                <Text style={styles.metricLabel}>steg</Text>
               </View>
             </View>
           </View>
@@ -229,7 +229,7 @@ export default function WorkoutDetailScreen() {
                 <View style={styles.coachIconWrap}>
                   <Ionicons name="chatbubble" size={14} color={Colors.primary} />
                 </View>
-                <Text style={styles.coachNoteTitle}>Coach's Note</Text>
+                <Text style={styles.coachNoteTitle}>Trenerens notat</Text>
               </View>
               <Text style={styles.coachNoteText}>{workout.coachNote}</Text>
             </Card>
@@ -238,7 +238,7 @@ export default function WorkoutDetailScreen() {
           {/* Steps */}
           {workout.steps.length > 0 && (
             <View style={styles.stepsSection}>
-              <Text style={styles.sectionTitle}>Workout Structure</Text>
+              <Text style={styles.sectionTitle}>Øktstruktur</Text>
               <View style={styles.stepsCard}>
                 {workout.steps.map((step) => renderStep(step))}
               </View>
@@ -250,14 +250,14 @@ export default function WorkoutDetailScreen() {
             <Card style={styles.completedCard} padding={16}>
               <View style={styles.completedHeader}>
                 <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-                <Text style={styles.completedTitle}>Completed</Text>
+                <Text style={styles.completedTitle}>Fullført</Text>
               </View>
               <View style={styles.completedStats}>
                 {[
-                  { label: 'Distance', value: `${workout.actual.distance.toFixed(1)} km` },
-                  { label: 'Duration', value: `${workout.actual.duration} min` },
-                  { label: 'Avg Pace', value: workout.actual.avgPace },
-                  { label: 'Avg HR', value: `${workout.actual.avgHR} bpm` },
+                  { label: 'Distanse', value: `${workout.actual.distance.toFixed(1)} km` },
+                  { label: 'Varighet', value: `${workout.actual.duration} min` },
+                  { label: 'Snitt-pace', value: workout.actual.avgPace },
+                  { label: 'Snitt-puls', value: `${workout.actual.avgHR} bpm` },
                 ].map((s) => (
                   <View key={s.label} style={styles.completedStat}>
                     <Text style={styles.completedStatVal}>{s.value}</Text>
@@ -267,7 +267,7 @@ export default function WorkoutDetailScreen() {
               </View>
               {/* Effort */}
               <View style={styles.effortRow}>
-                <Text style={styles.effortLabel}>Perceived effort</Text>
+                <Text style={styles.effortLabel}>Opplevd anstrengelse</Text>
                 <View style={styles.effortDots}>
                   {Array.from({ length: 10 }).map((_, i) => (
                     <View
@@ -293,9 +293,9 @@ export default function WorkoutDetailScreen() {
           {workout.type === 'rest' && (
             <Card style={styles.restCard} padding={24}>
               <Ionicons name="moon" size={40} color={Colors.rest} style={{ marginBottom: 12 }} />
-              <Text style={styles.restTitle}>Rest & Recover</Text>
+              <Text style={styles.restTitle}>Hvil og restituer</Text>
               <Text style={styles.restSub}>
-                Rest days are when adaptation happens. Today: hydrate, sleep 8+ hours, and light movement like walking or stretching is encouraged.
+                Hviledager er når kroppen tilpasser seg. I dag: drikk nok vann, sov 8+ timer, og lett bevegelse som gåturer eller tøying er oppfordret.
               </Text>
             </Card>
           )}
@@ -310,19 +310,19 @@ export default function WorkoutDetailScreen() {
               <TouchableOpacity onPress={() => setShowLogModal(false)}>
                 <Ionicons name="close" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Log Run</Text>
+              <Text style={styles.modalTitle}>Registrer løp</Text>
               <TouchableOpacity onPress={handleLog} style={styles.saveBtn}>
-                <Text style={styles.saveBtnText}>Save</Text>
+                <Text style={styles.saveBtnText}>Lagre</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalScroll}>
               <View style={styles.modalFields}>
                 {[
-                  { label: 'Distance (km)', placeholder: workout.targetDistance?.toString() ?? '—', value: logDistance, set: setLogDistance, keyboard: 'numeric' as const },
-                  { label: 'Duration (min)', placeholder: '—', value: logDuration, set: setLogDuration, keyboard: 'numeric' as const },
-                  { label: 'Avg Pace (min/km)', placeholder: workout.targetPace ?? '—', value: logPace, set: setLogPace, keyboard: 'default' as const },
-                  { label: 'Avg Heart Rate (bpm)', placeholder: '—', value: logHR, set: setLogHR, keyboard: 'numeric' as const },
+                  { label: 'Distanse (km)', placeholder: workout.targetDistance?.toString() ?? '—', value: logDistance, set: setLogDistance, keyboard: 'numeric' as const },
+                  { label: 'Varighet (min)', placeholder: '—', value: logDuration, set: setLogDuration, keyboard: 'numeric' as const },
+                  { label: 'Snitt-pace (min/km)', placeholder: workout.targetPace ?? '—', value: logPace, set: setLogPace, keyboard: 'default' as const },
+                  { label: 'Snitt-puls (bpm)', placeholder: '—', value: logHR, set: setLogHR, keyboard: 'numeric' as const },
                 ].map((field) => (
                   <View key={field.label}>
                     <Text style={styles.fieldLabel}>{field.label}</Text>
@@ -338,7 +338,7 @@ export default function WorkoutDetailScreen() {
                 ))}
 
                 <View>
-                  <Text style={styles.fieldLabel}>Perceived Effort (1–10)</Text>
+                  <Text style={styles.fieldLabel}>Opplevd anstrengelse (1–10)</Text>
                   <View style={styles.effortSelector}>
                     {Array.from({ length: 10 }).map((_, i) => (
                       <TouchableOpacity
@@ -353,12 +353,12 @@ export default function WorkoutDetailScreen() {
                 </View>
 
                 <View>
-                  <Text style={styles.fieldLabel}>Notes</Text>
+                  <Text style={styles.fieldLabel}>Notater</Text>
                   <TextInput
                     style={[styles.fieldInput, { height: 80, textAlignVertical: 'top' }]}
                     value={logNotes}
                     onChangeText={setLogNotes}
-                    placeholder="How did it feel?"
+                    placeholder="Hvordan føltes det?"
                     placeholderTextColor={Colors.textMuted}
                     multiline
                   />

@@ -6,9 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  SafeAreaView,
-  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,8 +19,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Avatar } from '@/components/ui/Avatar';
 
-const { width } = Dimensions.get('window');
-const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAYS = ['M', 'T', 'O', 'T', 'F', 'L', 'S'];
 
 const WORKOUT_COLORS: Record<WorkoutType, string> = {
   easy: Colors.easy,
@@ -68,9 +66,9 @@ export default function HomeScreen() {
 
   const greeting = () => {
     const h = today.getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 12) return 'God morgen';
+    if (h < 17) return 'God ettermiddag';
+    return 'God kveld';
   };
 
   return (
@@ -97,9 +95,9 @@ export default function HomeScreen() {
                 <View style={[styles.accentLine, { backgroundColor: Colors.border }]} />
                 <View style={[styles.heroContent, { alignItems: 'center', justifyContent: 'center', paddingVertical: 24 }]}>
                   <Ionicons name="calendar-outline" size={36} color={Colors.textMuted} />
-                  <Text style={[styles.heroTitle, { textAlign: 'center', marginTop: 12 }]}>No plan yet</Text>
+                  <Text style={[styles.heroTitle, { textAlign: 'center', marginTop: 12 }]}>Ingen plan ennå</Text>
                   <Text style={[styles.heroSub, { textAlign: 'center' }]}>
-                    Your coach will assign a training plan shortly.
+                    Treneren din vil snart tildele deg en treningsplan.
                   </Text>
                 </View>
               </LinearGradient>
@@ -111,10 +109,10 @@ export default function HomeScreen() {
                 <View style={[styles.heroContent, { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 }]}>
                   <Ionicons name="time-outline" size={36} color={Colors.primary} />
                   <Text style={[styles.heroTitle, { textAlign: 'center', marginTop: 12 }]}>
-                    Plan starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+                    Planen starter om {daysUntilStart} {daysUntilStart === 1 ? 'dag' : 'dager'}
                   </Text>
                   <Text style={[styles.heroSub, { textAlign: 'center' }]}>
-                    {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {planStartDate!.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </Text>
                 </View>
               </LinearGradient>
@@ -133,7 +131,7 @@ export default function HomeScreen() {
                     {todayWorkout.completed && (
                       <View style={styles.doneTag}>
                         <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
-                        <Text style={styles.doneTagText}>Done</Text>
+                        <Text style={styles.doneTagText}>Fullført</Text>
                       </View>
                     )}
                   </View>
@@ -155,7 +153,7 @@ export default function HomeScreen() {
                     {todayWorkout.steps.length > 0 && (
                       <View style={styles.metaItem}>
                         <Ionicons name="list-outline" size={14} color={Colors.textMuted} />
-                        <Text style={styles.metaText}>{todayWorkout.steps.length} steps</Text>
+                        <Text style={styles.metaText}>{todayWorkout.steps.length} steg</Text>
                       </View>
                     )}
                   </View>
@@ -178,11 +176,11 @@ export default function HomeScreen() {
           {/* Week strip — hidden until plan starts */}
           {!planNotStarted && <Card style={styles.weekCard} padding={16}>
             <View style={styles.weekHeader}>
-              <Text style={styles.sectionTitle}>This Week</Text>
+              <Text style={styles.sectionTitle}>Denne uken</Text>
               <View style={styles.weekHeaderRight}>
                 {assignedPlan && (
                   <Text style={styles.weekIndexLabel}>
-                    Week {viewingWeekIndex + 1} of {assignedPlan.totalWeeks}
+                    Uke {viewingWeekIndex + 1} av {assignedPlan.totalWeeks}
                   </Text>
                 )}
                 <Text style={styles.weekPhase}>{weekPlan.phase}</Text>
@@ -220,7 +218,7 @@ export default function HomeScreen() {
                     </View>
                     <Text style={[styles.dayType, { color }]} numberOfLines={1}>
                       {w.type === 'rest'
-                        ? 'Rest'
+                        ? 'Hvile'
                         : w.targetDistance
                           ? `${w.targetDistance}km`
                           : w.targetDuration
@@ -251,9 +249,9 @@ export default function HomeScreen() {
                 progress={weekProgress}
                 color={Colors.success}
                 label={`${completedCount}/${weekPlan.workouts.length}`}
-                sublabel="sessions"
+                sublabel="økter"
               />
-              <Text style={styles.statLabel}>Compliance</Text>
+              <Text style={styles.statLabel}>Etterlevelse</Text>
             </Card>
 
             <Card style={styles.statCard} padding={16}>
@@ -261,7 +259,7 @@ export default function HomeScreen() {
                 <Ionicons name="flame" size={24} color={Colors.primary} />
                 <Text style={styles.streakNum}>{athlete.streak}</Text>
               </View>
-              <Text style={styles.statLabel}>Day streak</Text>
+              <Text style={styles.statLabel}>Dagsrekke</Text>
             </Card>
 
             <Card style={styles.statCard} padding={16}>
@@ -271,7 +269,7 @@ export default function HomeScreen() {
                   {daysUntilRace !== null ? daysUntilRace : '—'}
                 </Text>
               </View>
-              <Text style={styles.statLabel}>Days to race</Text>
+              <Text style={styles.statLabel}>Dager til løp</Text>
             </Card>
           </View>
 
@@ -284,7 +282,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.raceMeta}>
                 <Text style={styles.raceDate}>
-                  {new Date(athlete.targetRace.date).toLocaleDateString('en-US', {
+                  {new Date(athlete.targetRace.date).toLocaleDateString('nb-NO', {
                     month: 'long',
                     day: 'numeric',
                     year: 'numeric',
@@ -294,8 +292,8 @@ export default function HomeScreen() {
               </View>
               <View style={styles.raceCountdown}>
                 {[
-                  { val: Math.floor(daysUntilRace / 7), label: 'weeks' },
-                  { val: daysUntilRace % 7, label: 'days' },
+                  { val: Math.floor(daysUntilRace / 7), label: 'uker' },
+                  { val: daysUntilRace % 7, label: 'dager' },
                 ].map((item) => (
                   <View key={item.label} style={styles.raceCountdownItem}>
                     <Text style={styles.raceCountNum}>{item.val}</Text>
@@ -309,9 +307,9 @@ export default function HomeScreen() {
           {/* Quick links */}
           <View style={styles.quickLinks}>
             {[
-              { icon: 'videocam-outline', label: 'Latest Video', color: Colors.purple },
-              { icon: 'mic-outline', label: 'New Podcast', color: Colors.primary },
-              { icon: 'document-text-outline', label: 'Training Tips', color: Colors.teal },
+              { icon: 'videocam-outline', label: 'Siste video', color: Colors.purple },
+              { icon: 'mic-outline', label: 'Ny podcast', color: Colors.primary },
+              { icon: 'document-text-outline', label: 'Treningstips', color: Colors.teal },
             ].map((item) => (
               <TouchableOpacity key={item.label} style={styles.quickLink} activeOpacity={0.8}>
                 <View style={[styles.quickIcon, { backgroundColor: item.color + '22' }]}>

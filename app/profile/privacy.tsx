@@ -16,15 +16,15 @@ export default function PrivacyScreen() {
 
   function handleDeleteAccount() {
     Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all training data. This action cannot be undone.',
+      'Slett konto',
+      'Dette vil permanent slette kontoen din og all treningsdata. Denne handlingen kan ikke angres.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Avbryt', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Slett',
           style: 'destructive',
           onPress: () => {
-            Alert.alert('Contact Support', 'Please email support@lopeprat.com to request account deletion.');
+            Alert.alert('Kontakt support', 'Send e-post til support@lopeprat.com for å be om sletting av konto.');
           },
         },
       ]
@@ -33,19 +33,19 @@ export default function PrivacyScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Privacy" />
+      <ScreenHeader title="Personvern" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* Data sharing */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DATA SHARING</Text>
+          <Text style={styles.sectionTitle}>DATADELING</Text>
           <Card padding={0}>
             {[
               {
                 key: 'coach',
                 icon: 'person-outline',
-                label: 'Share with Coach',
-                sub: 'Your coach can see all workouts, milestones and progress',
+                label: 'Del med trener',
+                sub: 'Treneren din kan se alle økter, milepæler og fremgang',
                 value: showCoach,
                 set: setShowCoach,
                 color: Colors.primary,
@@ -53,8 +53,8 @@ export default function PrivacyScreen() {
               {
                 key: 'data',
                 icon: 'analytics-outline',
-                label: 'Training Data Sync',
-                sub: 'Sync data with integrated apps (Garmin, Strava)',
+                label: 'Synkroniser treningsdata',
+                sub: 'Synkroniser data med integrerte apper (Garmin, Strava)',
                 value: shareData,
                 set: setShareData,
                 color: Colors.teal,
@@ -62,8 +62,8 @@ export default function PrivacyScreen() {
               {
                 key: 'analytics',
                 icon: 'bar-chart-outline',
-                label: 'App Analytics',
-                sub: 'Help improve Lopeprat by sharing anonymous usage data',
+                label: 'App-analyse',
+                sub: 'Hjelp oss å forbedre Lopeprat ved å dele anonyme bruksdata',
                 value: analytics,
                 set: setAnalytics,
                 color: Colors.purple,
@@ -90,12 +90,12 @@ export default function PrivacyScreen() {
 
         {/* Legal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>LEGAL</Text>
+          <Text style={styles.sectionTitle}>JURIDISK</Text>
           <Card padding={0}>
             {[
-              { label: 'Privacy Policy', icon: 'document-text-outline' },
-              { label: 'Terms of Service', icon: 'shield-checkmark-outline' },
-              { label: 'Cookie Policy', icon: 'information-circle-outline' },
+              { label: 'Personvernregler', icon: 'document-text-outline' },
+              { label: 'Brukervilkår', icon: 'shield-checkmark-outline' },
+              { label: 'Informasjonskapsler', icon: 'information-circle-outline' },
             ].map((item, i) => (
               <TouchableOpacity
                 key={item.label}
@@ -112,19 +112,19 @@ export default function PrivacyScreen() {
 
         {/* Danger zone */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors.error + 'AA' }]}>DANGER ZONE</Text>
+          <Text style={[styles.sectionTitle, { color: Colors.error + 'AA' }]}>FARESONE</Text>
           <Card padding={16} style={styles.dangerCard}>
             <View style={styles.dangerContent}>
               <Ionicons name="warning-outline" size={20} color={Colors.error} />
               <View style={styles.dangerText}>
-                <Text style={styles.dangerTitle}>Delete Account</Text>
+                <Text style={styles.dangerTitle}>Slett konto</Text>
                 <Text style={styles.dangerSub}>
-                  Permanently removes your account, training history, milestones and all data.
+                  Fjerner permanent kontoen din, treningshistorikk, milepæler og all data.
                 </Text>
               </View>
             </View>
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
-              <Text style={styles.deleteBtnText}>Delete My Account</Text>
+              <Text style={styles.deleteBtnText}>Slett kontoen min</Text>
             </TouchableOpacity>
           </Card>
         </View>

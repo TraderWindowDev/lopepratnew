@@ -18,7 +18,7 @@ const TYPE_COLORS: Record<string, string> = {
   strength: Colors.teal,
 };
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 
 export default function MyPlanScreen() {
   const router = useRouter();
@@ -27,11 +27,11 @@ export default function MyPlanScreen() {
   if (!assignedPlan) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="My Plan" />
+        <ScreenHeader title="Min plan" />
         <View style={styles.empty}>
           <Ionicons name="calendar-outline" size={56} color={Colors.textMuted} />
-          <Text style={styles.emptyTitle}>No plan assigned</Text>
-          <Text style={styles.emptySub}>Your coach will assign a training plan to you soon.</Text>
+          <Text style={styles.emptyTitle}>Ingen plan tildelt</Text>
+          <Text style={styles.emptySub}>Treneren din vil snart tildele en treningsplan til deg.</Text>
         </View>
       </View>
     );
@@ -51,7 +51,7 @@ export default function MyPlanScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="My Plan" />
+      <ScreenHeader title="Min plan" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {planNotStarted ? (
@@ -68,28 +68,28 @@ export default function MyPlanScreen() {
               >
                 <Ionicons name="time-outline" size={28} color={Colors.primary} />
                 <Text style={styles.countdownTitle}>
-                  Starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+                  Starter om {daysUntilStart} dag{daysUntilStart === 1 ? '' : 'er'}
                 </Text>
                 <Text style={styles.countdownDate}>
-                  {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {planStartDate!.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </Text>
               </LinearGradient>
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatVal}>{totalWeeks}</Text>
-                  <Text style={styles.heroStatLabel}>Total weeks</Text>
+                  <Text style={styles.heroStatLabel}>Totalt uker</Text>
                 </View>
                 <View style={styles.heroStatDivider} />
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatVal}>{assignedPlan.weeks.reduce((s, w) => s + w.totalKm, 0)}</Text>
-                  <Text style={styles.heroStatLabel}>Total km</Text>
+                  <Text style={styles.heroStatLabel}>Totalt km</Text>
                 </View>
               </View>
             </Card>
 
             {/* Plan overview preview */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Plan Overview</Text>
+              <Text style={styles.sectionTitle}>Planoversikt</Text>
               <View style={styles.weeksGrid}>
                 {assignedPlan.weeks.map((_, i) => (
                   <View key={i} style={styles.weekChip}>
@@ -106,7 +106,7 @@ export default function MyPlanScreen() {
           <View style={styles.heroTop}>
             <View style={styles.heroBadge}>
               <Ionicons name="trophy-outline" size={14} color={Colors.primary} />
-              <Text style={styles.heroBadgeText}>ACTIVE PLAN</Text>
+              <Text style={styles.heroBadgeText}>AKTIV PLAN</Text>
             </View>
           </View>
           <Text style={styles.planName}>{assignedPlan.name}</Text>
@@ -117,7 +117,7 @@ export default function MyPlanScreen() {
           {/* Progress bar */}
           <View style={styles.progressSection}>
             <View style={styles.progressLabelRow}>
-              <Text style={styles.progressLabel}>Week {currentWeek} of {totalWeeks}</Text>
+              <Text style={styles.progressLabel}>Uke {currentWeek} av {totalWeeks}</Text>
               <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
             </View>
             <View style={styles.progressTrack}>
@@ -128,17 +128,17 @@ export default function MyPlanScreen() {
           <View style={styles.heroStats}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatVal}>{totalWeeks}</Text>
-              <Text style={styles.heroStatLabel}>Total weeks</Text>
+              <Text style={styles.heroStatLabel}>Totalt uker</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
               <Text style={styles.heroStatVal}>{weekPlan.totalKm}</Text>
-              <Text style={styles.heroStatLabel}>This week km</Text>
+              <Text style={styles.heroStatLabel}>Denne uken km</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
               <Text style={styles.heroStatVal}>{weekPlan.workouts.filter(w => w.completed).length}/{weekPlan.workouts.length}</Text>
-              <Text style={styles.heroStatLabel}>Done today</Text>
+              <Text style={styles.heroStatLabel}>Fullført i dag</Text>
             </View>
           </View>
         </Card>
@@ -147,7 +147,7 @@ export default function MyPlanScreen() {
         {currentPlanWeek && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>This Week</Text>
+              <Text style={styles.sectionTitle}>Denne uken</Text>
               <View style={styles.phaseBadge}>
                 <Text style={styles.phaseText}>{currentPlanWeek.phase}</Text>
               </View>
@@ -186,7 +186,7 @@ export default function MyPlanScreen() {
 
         {/* All weeks overview */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Plan Overview</Text>
+          <Text style={styles.sectionTitle}>Planoversikt</Text>
           <View style={styles.weeksGrid}>
             {assignedPlan.weeks.map((week, i) => {
               const isActive = i === viewingWeekIndex;
@@ -214,7 +214,7 @@ export default function MyPlanScreen() {
         </View>
 
         <TouchableOpacity style={styles.viewPlanBtn} onPress={() => router.push('/(tabs)/training')}>
-          <Text style={styles.viewPlanBtnText}>Open Training Plan</Text>
+          <Text style={styles.viewPlanBtnText}>Åpne treningsplan</Text>
           <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
         </TouchableOpacity>
           </>

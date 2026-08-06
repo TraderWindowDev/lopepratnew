@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,33 +17,43 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import type { GoalType } from '@/constants/mock-data';
 
 const GOALS: { value: GoalType; label: string; sub: string }[] = [
-  { value: 'first_5k', label: 'First 5K', sub: 'Complete your first 5K race' },
-  { value: 'first_10k', label: 'First 10K', sub: 'Step up to 10 kilometres' },
-  { value: 'first_half', label: 'First Half Marathon', sub: '21.1 km endurance goal' },
-  { value: 'first_marathon', label: 'First Marathon', sub: 'The full 42.2 km challenge' },
-  { value: 'pb_half', label: 'Half Marathon PB', sub: 'Chase a new personal best' },
-  { value: 'pb_marathon', label: 'Marathon PB', sub: 'Beat your marathon record' },
+  { value: 'first_5k',      label: '5 km',          sub: 'Fullfør din første 5 km' },
+  { value: 'first_10k',     label: '10 km',          sub: 'Øk til 10 kilometer' },
+  { value: 'first_half',    label: 'Halvmaraton',    sub: '21,1 km utholdenhetsmål' },
+  { value: 'first_marathon',label: 'Maraton',        sub: 'Hele 42,2 km-utfordringen' },
+  { value: 'pb_half',       label: 'Halvmaraton PB', sub: 'Jag en ny personrekord' },
+  { value: 'pb_marathon',   label: 'Maraton PB',     sub: 'Slå maratonrekorden din' },
 ];
 
-const FITNESS_LEVELS = [
-  { value: 'beginner', label: 'Beginner', icon: 'leaf-outline', color: Colors.easy },
-  { value: 'intermediate', label: 'Intermediate', icon: 'trending-up-outline', color: Colors.gold },
-  { value: 'advanced', label: 'Advanced', icon: 'flash-outline', color: Colors.primary },
-] as const;
+// Olympiatoppen-soner — beregnet fra makspuls
+const ZONES = [
+  { label: 'Sone 1', name: 'Aktiv restitusjon',    lo: 0,    hi: 0.72, color: '#4FC3F7' },
+  { label: 'Sone 2', name: 'Grunnkondisjon',        lo: 0.72, hi: 0.82, color: '#66BB6A' },
+  { label: 'Sone 3', name: 'Aerob kondisjon',       lo: 0.82, hi: 0.87, color: '#9CCC65' },
+  { label: 'Sone 4', name: 'Terskeltrening',        lo: 0.87, hi: 0.92, color: '#FFA726' },
+  { label: 'Sone 5', name: 'VO₂maks',              lo: 0.92, hi: 0.97, color: '#FF7043' },
+  { label: 'Sone 6', name: 'Fartstrening',          lo: 0.97, hi: 1.10, color: '#E53935' },
+];
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
+const DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 const KM_OPTIONS = [20, 30, 40, 50, 60, 70, 80, 100];
 
 export default function TrainingPreferencesScreen() {
   const { athlete, session, refreshAthleteState } = useStore();
 
-  const [goal, setGoal] = useState<GoalType>(athlete.goal);
-  const [fitnessLevel, setFitnessLevel] = useState(athlete.fitnessLevel);
+  const [goal, setGoal]               = useState<GoalType>(athlete.goal);
   const [weeklyTarget, setWeeklyTarget] = useState(athlete.weeklyMileageTarget);
   const [preferredDays, setPreferredDays] = useState<boolean[]>([true, false, true, false, true, true, false]);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [age, setAge]                 = useState('');
+  const [saving, setSaving]           = useState(false);
+  const [saved, setSaved]             = useState(false);
+
+  // Olympiatoppen makspuls-formel
+  const maxHR = useMemo(() => {
+    const n = parseInt(age);
+    if (!n || n < 10 || n > 100) return null;
+    return Math.round(211 - 0.64 * n);
+  }, [age]);
 
   function toggleDay(i: number) {
     setPreferredDays(prev => prev.map((v, idx) => idx === i ? !v : v));
@@ -57,7 +68,7 @@ export default function TrainingPreferencesScreen() {
       if (isSupabaseConfigured) {
         const { error } = await supabase
           .from('athletes')
-          .update({ goal, fitness_level: fitnessLevel, weekly_mileage_target: weeklyTarget })
+          .update({ goal, weekly_mileage_target: weeklyTarget })
           .eq('id', session.user.id);
         if (error) throw error;
         await refreshAthleteState();
@@ -65,25 +76,22 @@ export default function TrainingPreferencesScreen() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to save preferences');
+      Alert.alert('Feil', e.message ?? 'Kunne ikke lagre preferanser');
     } finally {
       setSaving(false);
     }
   }
 
-  const hasChanges =
-    goal !== athlete.goal ||
-    fitnessLevel !== athlete.fitnessLevel ||
-    weeklyTarget !== athlete.weeklyMileageTarget;
+  const hasChanges = goal !== athlete.goal || weeklyTarget !== athlete.weeklyMileageTarget;
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Training Preferences" />
+      <ScreenHeader title="Treningspreferanser" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* Goal */}
+        {/* Treningsmål */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>TRAINING GOAL</Text>
+          <Text style={styles.sectionTitle}>TRENINGSMÅL</Text>
           <View style={styles.goalGrid}>
             {GOALS.map(g => (
               <TouchableOpacity
@@ -105,32 +113,63 @@ export default function TrainingPreferencesScreen() {
           </View>
         </View>
 
-        {/* Fitness level */}
+        {/* Olympiatoppen-soner */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>FITNESS LEVEL</Text>
-          <View style={styles.levelRow}>
-            {FITNESS_LEVELS.map(l => (
-              <TouchableOpacity
-                key={l.value}
-                style={[styles.levelCard, fitnessLevel === l.value && { borderColor: l.color, backgroundColor: l.color + '15' }]}
-                onPress={() => { setFitnessLevel(l.value); setSaved(false); }}
-              >
-                <Ionicons name={l.icon as any} size={22} color={fitnessLevel === l.value ? l.color : Colors.textMuted} />
-                <Text style={[styles.levelLabel, fitnessLevel === l.value && { color: l.color }]}>
-                  {l.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.sectionTitle}>OLYMPIATOPPEN-SONER</Text>
+          <Card padding={16}>
+            <Text style={styles.zoneHint}>
+              Skriv inn alder for å beregne pulssoner (211 − 0,64 × alder)
+            </Text>
+            <View style={styles.ageRow}>
+              <TextInput
+                style={styles.ageInput}
+                value={age}
+                onChangeText={setAge}
+                keyboardType="numeric"
+                placeholder="F.eks. 32"
+                placeholderTextColor={Colors.textMuted}
+                maxLength={3}
+              />
+              <Text style={styles.ageLabel}>år</Text>
+              {maxHR && (
+                <View style={styles.maxHRBadge}>
+                  <Text style={styles.maxHRText}>Maks HR: {maxHR}</Text>
+                </View>
+              )}
+            </View>
+
+            {maxHR && (
+              <View style={styles.zonesTable}>
+                {ZONES.map((z) => {
+                  const loHR = z.lo === 0 ? 0 : Math.round(z.lo * maxHR);
+                  const hiHR = z.hi >= 1.05 ? null : Math.round(z.hi * maxHR);
+                  const range = loHR === 0
+                    ? `< ${Math.round(0.72 * maxHR)} slag/min`
+                    : hiHR === null
+                      ? `> ${loHR} slag/min`
+                      : `${loHR}–${hiHR} slag/min`;
+                  return (
+                    <View key={z.label} style={styles.zoneRow}>
+                      <View style={[styles.zoneDot, { backgroundColor: z.color }]} />
+                      <View style={styles.zoneInfo}>
+                        <Text style={styles.zoneLabel}>{z.label} — {z.name}</Text>
+                        <Text style={styles.zoneRange}>{range}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </Card>
         </View>
 
-        {/* Weekly mileage target */}
+        {/* Ukentlig kilometermål */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>WEEKLY MILEAGE TARGET</Text>
+          <Text style={styles.sectionTitle}>UKENTLIG KILOMETERMÅL</Text>
           <Card padding={16}>
             <View style={styles.kmDisplay}>
               <Text style={styles.kmValue}>{weeklyTarget}</Text>
-              <Text style={styles.kmUnit}>km / week</Text>
+              <Text style={styles.kmUnit}>km / uke</Text>
             </View>
             <View style={styles.kmOptions}>
               {KM_OPTIONS.map(km => (
@@ -148,11 +187,11 @@ export default function TrainingPreferencesScreen() {
           </Card>
         </View>
 
-        {/* Preferred training days */}
+        {/* Foretrukne treningsdager */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PREFERRED TRAINING DAYS</Text>
+          <Text style={styles.sectionTitle}>TRENINGSDAGER</Text>
           <Card padding={16}>
-            <Text style={styles.dayHint}>Select the days you prefer to train</Text>
+            <Text style={styles.dayHint}>Velg dagene du foretrekker å trene</Text>
             <View style={styles.daysRow}>
               {DAYS.map((day, i) => (
                 <TouchableOpacity
@@ -167,12 +206,12 @@ export default function TrainingPreferencesScreen() {
               ))}
             </View>
             <Text style={styles.dayCount}>
-              {preferredDays.filter(Boolean).length} days selected
+              {preferredDays.filter(Boolean).length} dager valgt
             </Text>
           </Card>
         </View>
 
-        {/* Save */}
+        {/* Lagre */}
         <TouchableOpacity
           style={[styles.saveBtn, !hasChanges && styles.saveBtnIdle, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
@@ -181,10 +220,10 @@ export default function TrainingPreferencesScreen() {
           {saved ? (
             <>
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={styles.saveBtnText}>Saved!</Text>
+              <Text style={styles.saveBtnText}>Lagret!</Text>
             </>
           ) : (
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Preferences'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? 'Lagrer…' : 'Lagre preferanser'}</Text>
           )}
         </TouchableOpacity>
 
@@ -207,7 +246,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
-    flexDirection: 'column',
     gap: 2,
   },
   goalCardActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryFade },
@@ -216,30 +254,47 @@ const styles = StyleSheet.create({
   goalSub: { ...Font.small, color: Colors.textMuted },
   goalCheck: { position: 'absolute', top: 12, right: 12 },
 
-  levelRow: { flexDirection: 'row', gap: 10 },
-  levelCard: {
-    flex: 1,
-    backgroundColor: Colors.card,
+  // Olympiatoppen zones
+  zoneHint: { ...Font.small, color: Colors.textMuted, marginBottom: 12, lineHeight: 18 },
+  ageRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  ageInput: {
+    ...Font.h3,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 14,
-    alignItems: 'center',
-    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 80,
+    textAlign: 'center',
   },
-  levelLabel: { ...Font.small, color: Colors.textMuted, fontWeight: '600' },
+  ageLabel: { ...Font.body, color: Colors.textSecondary },
+  maxHRBadge: {
+    marginLeft: 'auto' as any,
+    backgroundColor: Colors.primaryFade,
+    borderRadius: Radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.primary + '44',
+  },
+  maxHRText: { ...Font.label, color: Colors.primary },
+  zonesTable: { gap: 8 },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  zoneDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  zoneInfo: { flex: 1 },
+  zoneLabel: { ...Font.small, color: Colors.text, fontWeight: '600' },
+  zoneRange: { ...Font.tiny, color: Colors.textMuted, marginTop: 1 },
 
   kmDisplay: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 14 },
   kmValue: { ...Font.h1, color: Colors.primary },
   kmUnit: { ...Font.body, color: Colors.textSecondary },
   kmOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   kmChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: Radius.full, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.border,
   },
   kmChipActive: { backgroundColor: Colors.primaryFade, borderColor: Colors.primary },
   kmChipText: { ...Font.small, color: Colors.textSecondary, fontWeight: '600' },
@@ -248,14 +303,9 @@ const styles = StyleSheet.create({
   dayHint: { ...Font.small, color: Colors.textMuted, marginBottom: 12 },
   daysRow: { flexDirection: 'row', gap: 8 },
   dayChip: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1, aspectRatio: 1, borderRadius: Radius.sm,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
   },
   dayChipActive: { backgroundColor: Colors.primaryFade, borderColor: Colors.primary },
   dayChipText: { ...Font.label, color: Colors.textMuted },
@@ -263,15 +313,9 @@ const styles = StyleSheet.create({
   dayCount: { ...Font.tiny, color: Colors.textMuted, marginTop: 10, textAlign: 'right' },
 
   saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: Spacing.md,
-    marginTop: 28,
-    padding: 16,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginHorizontal: Spacing.md, marginTop: 28, padding: 16,
+    backgroundColor: Colors.primary, borderRadius: Radius.md,
   },
   saveBtnIdle: { backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border },
   saveBtnDisabled: { opacity: 0.5 },

@@ -26,39 +26,39 @@ const { width } = Dimensions.get('window');
 // When Supabase is configured, include the credentials step (step 1).
 // Without it, the mock flow works exactly as before.
 const MOCK_STEPS = [
-  { id: 'name',  title: 'Welcome!\nWhat\'s your name?',    subtitle: '' },
-  { id: 'goal',  title: 'What\'s your\nmain goal?',         subtitle: '' },
-  { id: 'level', title: 'How much do\nyou run now?',         subtitle: 'Be honest — it helps us build the right plan.' },
-  { id: 'race',  title: 'Do you have a\ntarget race?',      subtitle: '' },
-  { id: 'days',  title: 'How many days\ncan you train?',    subtitle: 'Most runners do 4–6 days/week.' },
-  { id: 'done',  title: 'You\'re all set!',                 subtitle: '' },
+  { id: 'name',  title: 'Velkommen!\nHva heter du?',        subtitle: '' },
+  { id: 'goal',  title: 'Hva er ditt\nhovedmål?',           subtitle: '' },
+  { id: 'level', title: 'Hvor mye løper\ndu nå?',           subtitle: 'Vær ærlig — det hjelper oss å lage riktig plan.' },
+  { id: 'race',  title: 'Har du et\nmålløp?',               subtitle: '' },
+  { id: 'days',  title: 'Hvor mange dager\nkan du trene?',  subtitle: 'De fleste løpere trener 4–6 dager/uke.' },
+  { id: 'done',  title: 'Du er klar!',                      subtitle: '' },
 ];
 
 const REAL_STEPS = [
-  { id: 'name',  title: 'Welcome!\nWhat\'s your name?',    subtitle: '' },
-  { id: 'creds', title: 'Create your\naccount',             subtitle: 'Your login details — keep them safe.' },
-  { id: 'goal',  title: 'What\'s your\nmain goal?',         subtitle: '' },
-  { id: 'level', title: 'How much do\nyou run now?',         subtitle: 'Be honest — it helps us build the right plan.' },
-  { id: 'race',  title: 'Do you have a\ntarget race?',      subtitle: '' },
-  { id: 'days',  title: 'How many days\ncan you train?',    subtitle: 'Most runners do 4–6 days/week.' },
-  { id: 'done',  title: 'You\'re all set!',                 subtitle: '' },
+  { id: 'name',  title: 'Velkommen!\nHva heter du?',        subtitle: '' },
+  { id: 'creds', title: 'Opprett din\nkonto',               subtitle: 'Dine innloggingsdetaljer — ta vare på dem.' },
+  { id: 'goal',  title: 'Hva er ditt\nhovedmål?',           subtitle: '' },
+  { id: 'level', title: 'Hvor mye løper\ndu nå?',           subtitle: 'Vær ærlig — det hjelper oss å lage riktig plan.' },
+  { id: 'race',  title: 'Har du et\nmålløp?',               subtitle: '' },
+  { id: 'days',  title: 'Hvor mange dager\nkan du trene?',  subtitle: 'De fleste løpere trener 4–6 dager/uke.' },
+  { id: 'done',  title: 'Du er klar!',                      subtitle: '' },
 ];
 
 const STEPS = isSupabaseConfigured ? REAL_STEPS : MOCK_STEPS;
 
 const GOALS = [
-  { id: 'first_5k',       label: 'Complete my first 5K',   icon: 'flag-outline' },
-  { id: 'first_10k',      label: 'Complete my first 10K',  icon: 'trending-up-outline' },
-  { id: 'first_half',     label: 'Run a half marathon',     icon: 'medal-outline' },
-  { id: 'first_marathon', label: 'Finish a marathon',       icon: 'star-outline' },
-  { id: 'pb_half',        label: 'Half marathon PB',        icon: 'flash-outline' },
-  { id: 'pb_marathon',    label: 'Marathon PB',             icon: 'trophy-outline' },
+  { id: 'first_5k',       label: 'Fullfør min første 5 km',  icon: 'flag-outline' },
+  { id: 'first_10k',      label: 'Fullfør min første 10 km', icon: 'trending-up-outline' },
+  { id: 'first_half',     label: 'Løp et halvmaraton',        icon: 'medal-outline' },
+  { id: 'first_marathon', label: 'Fullfør et maraton',        icon: 'star-outline' },
+  { id: 'pb_half',        label: 'Halvmaraton PR',            icon: 'flash-outline' },
+  { id: 'pb_marathon',    label: 'Maraton PR',                icon: 'trophy-outline' },
 ];
 
 const LEVELS = [
-  { id: 'beginner',     label: 'Just starting out', sub: '0–15 km/week',  icon: 'leaf-outline' },
-  { id: 'intermediate', label: 'Regular runner',     sub: '20–50 km/week', icon: 'bicycle-outline' },
-  { id: 'advanced',     label: 'Experienced',        sub: '50+ km/week',   icon: 'rocket-outline' },
+  { id: 'beginner',     label: 'Nybegynner',       sub: '0–15 km/uke',   icon: 'leaf-outline' },
+  { id: 'intermediate', label: 'Regelmessig løper', sub: '20–50 km/uke',  icon: 'bicycle-outline' },
+  { id: 'advanced',     label: 'Erfaren',           sub: '50+ km/uke',    icon: 'rocket-outline' },
 ];
 
 function isValidEmail(email: string) {
@@ -131,11 +131,11 @@ export default function OnboardingScreen() {
         router.replace('/(tabs)');
       } else {
         // Email confirmation required — show a message
-        setError('Account created! Check your email to confirm, then sign in.');
+        setError('Konto opprettet! Sjekk e-posten for å bekrefte, og logg deretter inn.');
         setTimeout(() => router.replace('/(auth)'), 4000);
       }
     } catch (e: any) {
-      setError(e.message ?? 'Sign up failed. Please try again.');
+      setError(e.message ?? 'Registrering feilet. Prøv igjen.');
     } finally {
       setLoading(false);
     }
@@ -173,7 +173,7 @@ export default function OnboardingScreen() {
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Your first name"
+                placeholder="Fornavn"
                 placeholderTextColor={Colors.textMuted}
                 autoFocus
                 returnKeyType="next"
@@ -190,7 +190,7 @@ export default function OnboardingScreen() {
                     style={styles.inputInline}
                     value={email}
                     onChangeText={(t) => { setEmail(t); setError(''); }}
-                    placeholder="Email address"
+                    placeholder="E-postadresse"
                     placeholderTextColor={Colors.textMuted}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -205,7 +205,7 @@ export default function OnboardingScreen() {
                     style={[styles.inputInline, { flex: 1 }]}
                     value={password}
                     onChangeText={(t) => { setPassword(t); setError(''); }}
-                    placeholder="Password (min 6 characters)"
+                    placeholder="Passord (min. 6 tegn)"
                     placeholderTextColor={Colors.textMuted}
                     secureTextEntry={!showPw}
                     autoCapitalize="none"
@@ -218,10 +218,10 @@ export default function OnboardingScreen() {
                 </View>
 
                 {!isValidEmail(email) && email.length > 0 && (
-                  <Text style={styles.fieldHint}>Enter a valid email address</Text>
+                  <Text style={styles.fieldHint}>Skriv inn en gyldig e-postadresse</Text>
                 )}
                 {password.length > 0 && password.length < 6 && (
-                  <Text style={styles.fieldHint}>Password must be at least 6 characters</Text>
+                  <Text style={styles.fieldHint}>Passordet må ha minst 6 tegn</Text>
                 )}
               </View>
             )}
@@ -274,7 +274,7 @@ export default function OnboardingScreen() {
                     style={styles.inputInline}
                     value={raceName}
                     onChangeText={setRaceName}
-                    placeholder="Race name (e.g. Berlin Marathon)"
+                    placeholder="Løpsnavn (f.eks. Berlin maraton)"
                     placeholderTextColor={Colors.textMuted}
                     autoFocus
                     returnKeyType="next"
@@ -292,7 +292,7 @@ export default function OnboardingScreen() {
                     returnKeyType="done"
                   />
                 </View>
-                <Text style={styles.raceHint}>You can update this anytime from your profile.</Text>
+                <Text style={styles.raceHint}>Du kan oppdatere dette når som helst fra profilen din.</Text>
               </View>
             )}
 
@@ -307,7 +307,7 @@ export default function OnboardingScreen() {
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.dayNum, days === d && styles.dayNumSelected]}>{d}</Text>
-                    <Text style={[styles.dayLabel, days === d && styles.dayLabelSelected]}>days</Text>
+                    <Text style={[styles.dayLabel, days === d && styles.dayLabelSelected]}>dager</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -320,7 +320,7 @@ export default function OnboardingScreen() {
                   <Ionicons name="checkmark-circle" size={56} color={Colors.success} />
                 </View>
                 <Text style={styles.doneText}>
-                  Welcome{name ? `, ${name}` : ''}! Your Lopeprat coach will have your personalised plan ready shortly.
+                  Velkommen{name ? `, ${name}` : ''}! Lopeprat-treneren din vil ha en personlig plan klar til deg snart.
                 </Text>
                 {error ? (
                   <View style={[styles.errorBanner, error.startsWith('Account created') && styles.successBanner]}>
@@ -336,10 +336,10 @@ export default function OnboardingScreen() {
                 ) : null}
                 <View style={styles.doneFeatures}>
                   {[
-                    { icon: 'calendar', text: 'Custom training plan' },
-                    { icon: 'chatbubble-ellipses', text: 'Direct coach messaging' },
-                    { icon: 'bar-chart', text: 'Progress tracking' },
-                    { icon: 'play-circle', text: 'Exclusive content' },
+                    { icon: 'calendar', text: 'Tilpasset treningsplan' },
+                    { icon: 'chatbubble-ellipses', text: 'Direkte meldinger med trener' },
+                    { icon: 'bar-chart', text: 'Fremgangsregistrering' },
+                    { icon: 'play-circle', text: 'Eksklusivt innhold' },
                   ].map((f) => (
                     <View key={f.text} style={styles.doneFeat}>
                       <Ionicons name={f.icon as any} size={16} color={Colors.primary} />
@@ -370,7 +370,7 @@ export default function OnboardingScreen() {
                 ) : (
                   <>
                     <Text style={styles.nextBtnText}>
-                      {currentId === 'done' ? 'Go to my plan →' : 'Continue'}
+                      {currentId === 'done' ? 'Gå til min plan →' : 'Fortsett'}
                     </Text>
                     {currentId !== 'done' && <Ionicons name="arrow-forward" size={18} color="#fff" />}
                   </>

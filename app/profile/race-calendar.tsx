@@ -44,7 +44,7 @@ function daysUntil(dateStr: string): number {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString('nb-NO', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
 }
@@ -163,7 +163,7 @@ export default function RaceCalendarScreen() {
   if (!loaded) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Race Calendar" />
+        <ScreenHeader title="Løpskalender" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.primary} />
         </View>
@@ -174,7 +174,7 @@ export default function RaceCalendarScreen() {
   return (
     <View style={styles.container}>
       <ScreenHeader
-        title="Race Calendar"
+        title="Løpskalender"
         right={
           <TouchableOpacity onPress={openAdd} hitSlop={8}>
             <Ionicons name="add" size={26} color={Colors.primary} />
@@ -186,11 +186,11 @@ export default function RaceCalendarScreen() {
 
         {/* Upcoming */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>UPCOMING</Text>
+          <Text style={styles.sectionTitle}>KOMMENDE</Text>
           {upcomingRaces.length === 0 ? (
             <Card padding={24} style={styles.emptyCard}>
               <Ionicons name="flag-outline" size={32} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>No upcoming races. Tap + to add one.</Text>
+              <Text style={styles.emptyText}>Ingen kommende løp. Trykk + for å legge til.</Text>
             </Card>
           ) : (
             upcomingRaces.map((race) => {
@@ -200,7 +200,7 @@ export default function RaceCalendarScreen() {
                   {race.isTarget && (
                     <View style={styles.targetBanner}>
                       <Ionicons name="trophy" size={12} color={Colors.gold} />
-                      <Text style={styles.targetBannerText}>GOAL RACE</Text>
+                      <Text style={styles.targetBannerText}>MÅLLØP</Text>
                     </View>
                   )}
                   <View style={styles.raceContent}>
@@ -208,7 +208,7 @@ export default function RaceCalendarScreen() {
                       <Text style={[styles.countdownDays, race.isTarget && { color: Colors.gold }]}>
                         {days}
                       </Text>
-                      <Text style={styles.countdownLabel}>days</Text>
+                      <Text style={styles.countdownLabel}>dager</Text>
                     </View>
                     <View style={styles.raceInfo}>
                       <Text style={styles.raceName}>{race.name}</Text>
@@ -237,7 +237,7 @@ export default function RaceCalendarScreen() {
         {/* Past */}
         {pastRaces.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>PAST RACES</Text>
+            <Text style={styles.sectionTitle}>TIDLIGERE LØP</Text>
             {pastRaces.map((race) => (
               <Card key={race.id} padding={16} style={styles.pastRaceCard}>
                 <View style={styles.pastRaceRow}>
@@ -272,7 +272,7 @@ export default function RaceCalendarScreen() {
                 ) : (
                   <TouchableOpacity style={styles.logResultBtn} onPress={() => openResult(race)}>
                     <Ionicons name="add-circle-outline" size={14} color={Colors.primary} />
-                    <Text style={styles.logResultBtnText}>Log result</Text>
+                    <Text style={styles.logResultBtnText}>Logg resultat</Text>
                   </TouchableOpacity>
                 )}
 
@@ -286,7 +286,7 @@ export default function RaceCalendarScreen() {
 
         <TouchableOpacity style={styles.addRaceBtn} onPress={openAdd}>
           <Ionicons name="add-circle-outline" size={20} color={Colors.primary} />
-          <Text style={styles.addRaceBtnText}>Add Race</Text>
+          <Text style={styles.addRaceBtnText}>Legg til løp</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -297,25 +297,25 @@ export default function RaceCalendarScreen() {
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{editingId ? 'Edit Race' : 'Add Race'}</Text>
+                <Text style={styles.modalTitle}>{editingId ? 'Rediger løp' : 'Legg til løp'}</Text>
                 <TouchableOpacity onPress={() => setShowModal(false)}>
                   <Ionicons name="close" size={24} color={Colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Race Name</Text>
+                <Text style={styles.formLabel}>Løpsnavn</Text>
                 <TextInput
                   style={styles.input}
                   value={form.name}
                   onChangeText={t => setForm(f => ({ ...f, name: t }))}
-                  placeholder="e.g. Chicago Marathon"
+                  placeholder="f.eks. Chicago maraton"
                   placeholderTextColor={Colors.textMuted}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Date (YYYY-MM-DD)</Text>
+                <Text style={styles.formLabel}>Dato (ÅÅÅÅ-MM-DD)</Text>
                 <TextInput
                   style={styles.input}
                   value={form.date}
@@ -327,7 +327,7 @@ export default function RaceCalendarScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Distance</Text>
+                <Text style={styles.formLabel}>Distanse</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.distancePicker}>
                   {DISTANCES.map(d => (
                     <TouchableOpacity
@@ -344,12 +344,12 @@ export default function RaceCalendarScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Location (optional)</Text>
+                <Text style={styles.formLabel}>Sted (valgfritt)</Text>
                 <TextInput
                   style={styles.input}
                   value={form.location}
                   onChangeText={t => setForm(f => ({ ...f, location: t }))}
-                  placeholder="City, Country"
+                  placeholder="By, land"
                   placeholderTextColor={Colors.textMuted}
                 />
               </View>
@@ -364,7 +364,7 @@ export default function RaceCalendarScreen() {
                   color={form.isTarget ? Colors.gold : Colors.textMuted}
                 />
                 <Text style={[styles.targetToggleText, form.isTarget && styles.targetToggleTextActive]}>
-                  Set as goal race
+                  Sett som målløp
                 </Text>
                 {form.isTarget && (
                   <Ionicons name="checkmark-circle" size={18} color={Colors.gold} style={{ marginLeft: 'auto' }} />
@@ -385,7 +385,7 @@ export default function RaceCalendarScreen() {
                   onPress={handleSave}
                   disabled={!form.name || !form.date}
                 >
-                  <Text style={styles.saveBtnText}>Save Race</Text>
+                  <Text style={styles.saveBtnText}>Lagre løp</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -399,14 +399,14 @@ export default function RaceCalendarScreen() {
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Race Result</Text>
+                <Text style={styles.modalTitle}>Løpsresultat</Text>
                 <TouchableOpacity onPress={() => setShowResultModal(false)}>
                   <Ionicons name="close" size={24} color={Colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Finish Time</Text>
+                <Text style={styles.formLabel}>Sluttid</Text>
                 <TextInput
                   style={styles.input}
                   value={resultForm.finishTime}
@@ -420,7 +420,7 @@ export default function RaceCalendarScreen() {
 
               <View style={styles.resultRow2}>
                 <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.formLabel}>Category Place</Text>
+                  <Text style={styles.formLabel}>Kategoriplacering</Text>
                   <TextInput
                     style={styles.input}
                     value={resultForm.categoryPlace}
@@ -430,7 +430,7 @@ export default function RaceCalendarScreen() {
                   />
                 </View>
                 <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.formLabel}>Overall Place</Text>
+                  <Text style={styles.formLabel}>Sammenlagtplacering</Text>
                   <TextInput
                     style={styles.input}
                     value={resultForm.overallPlace}
@@ -442,12 +442,12 @@ export default function RaceCalendarScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Notes</Text>
+                <Text style={styles.formLabel}>Notater</Text>
                 <TextInput
                   style={[styles.input, styles.inputMulti]}
                   value={resultForm.notes}
                   onChangeText={t => setResultForm(f => ({ ...f, notes: t }))}
-                  placeholder="How did it feel? What went well?"
+                  placeholder="Hvordan føltes det? Hva gikk bra?"
                   placeholderTextColor={Colors.textMuted}
                   multiline
                 />
@@ -460,7 +460,7 @@ export default function RaceCalendarScreen() {
               >
                 {savingResult
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.saveBtnText}>Save Result</Text>}
+                  : <Text style={styles.saveBtnText}>Lagre resultat</Text>}
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>

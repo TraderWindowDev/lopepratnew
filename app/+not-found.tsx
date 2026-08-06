@@ -5,8 +5,8 @@ import { Colors, Font } from '@/constants/theme';
 export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Screen not found</Text>
-      <Link href="/(auth)" style={styles.link}>Go to home</Link>
+      <Text style={styles.title}>Siden ble ikke funnet</Text>
+      <Link href="/(auth)" style={styles.link}>Gå til startsiden</Link>
     </View>
   );
 }

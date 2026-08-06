@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,17 +49,17 @@ export default function LoginScreen() {
   // ─── Real Supabase auth ────────────────────────────────────────
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
-      setError('Please enter your email and password.');
+      setError('Vennligst skriv inn e-post og passord.');
       return;
     }
     setError('');
     setLoading(true);
     try {
       const { user } = await signIn(email.trim(), password);
-      if (!user) throw new Error('Sign in failed');
+      if (!user) throw new Error('Innlogging feilet');
       // Profile fetch + mode set handled by the auth listener in the store
     } catch (e: any) {
-      setError(e.message ?? 'Sign in failed. Please check your credentials.');
+      setError(e.message ?? 'Innlogging feilet. Sjekk e-post og passord.');
     } finally {
       setLoading(false);
     }
@@ -86,16 +86,16 @@ export default function LoginScreen() {
           {/* Hero */}
           <View style={styles.hero}>
             <Text style={styles.heroSubtitle}>
-              Expert coaching from the Lopeprat team.{'\n'}Personalised plans. Real progress.
+              Ekspertcoaching fra Lopeprat-teamet.{'\n'}Personlige treningsplaner. Ekte fremgang.
             </Text>
           </View>
 
           {/* Stats strip */}
           <View style={styles.statsRow}>
             {[
-              { value: '240+', label: 'Athletes' },
-              { value: '6', label: 'Coaches' },
-              { value: '38', label: 'PRs this month' },
+              { value: '240+', label: 'Utøvere' },
+              { value: '6', label: 'Trenere' },
+              { value: '38', label: 'PR denne måneden' },
             ].map((s) => (
               <View key={s.label} style={styles.stat}>
                 <Text style={styles.statValue}>{s.value}</Text>
@@ -114,7 +114,7 @@ export default function LoginScreen() {
                   style={styles.input}
                   value={email}
                   onChangeText={(t) => { setEmail(t); setError(''); }}
-                  placeholder="Email address"
+                  placeholder="E-postadresse"
                   placeholderTextColor={Colors.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -129,7 +129,7 @@ export default function LoginScreen() {
                   style={[styles.input, { flex: 1 }]}
                   value={password}
                   onChangeText={(t) => { setPassword(t); setError(''); }}
-                  placeholder="Password"
+                  placeholder="Passord"
                   placeholderTextColor={Colors.textMuted}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
@@ -163,7 +163,7 @@ export default function LoginScreen() {
                   ) : (
                     <>
                       <Ionicons name="log-in-outline" size={20} color="#fff" />
-                      <Text style={styles.primaryBtnText}>Sign In</Text>
+                      <Text style={styles.primaryBtnText}>Logg inn</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -174,13 +174,13 @@ export default function LoginScreen() {
                 onPress={() => router.push('/(auth)/onboarding')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.secondaryBtnText}>New athlete? Create an account →</Text>
+                <Text style={styles.secondaryBtnText}>Ny utøver? Opprett konto →</Text>
               </TouchableOpacity>
 
               <View style={styles.coachHint}>
                 <Ionicons name="shield-checkmark-outline" size={13} color={Colors.gold} />
                 <Text style={styles.coachHintText}>
-                  Lopeprat coaches — sign in above with your team account
+                  Lopeprat-trenere — logg inn ovenfor med din teamkonto
                 </Text>
               </View>
             </View>
@@ -189,7 +189,7 @@ export default function LoginScreen() {
             <View style={styles.actions}>
               <View style={styles.devBanner}>
                 <Ionicons name="code-slash-outline" size={14} color={Colors.textMuted} />
-                <Text style={styles.devBannerText}>Dev mode — Supabase not configured</Text>
+                <Text style={styles.devBannerText}>Dev-modus — Supabase ikke konfigurert</Text>
               </View>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={handleMockAthlete} activeOpacity={0.8}>
@@ -200,29 +200,29 @@ export default function LoginScreen() {
                   end={{ x: 1, y: 0 }}
                 >
                   <Ionicons name="person-outline" size={20} color="#fff" />
-                  <Text style={styles.primaryBtnText}>Sign In as Athlete</Text>
+                  <Text style={styles.primaryBtnText}>Logg inn som utøver</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleMockNewAthlete} activeOpacity={0.8}>
-                <Text style={styles.secondaryBtnText}>New athlete? Start here →</Text>
+                <Text style={styles.secondaryBtnText}>Ny utøver? Start her →</Text>
               </TouchableOpacity>
 
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Lopeprat team?</Text>
+                <Text style={styles.dividerText}>Lopeprat-team?</Text>
                 <View style={styles.dividerLine} />
               </View>
 
               <TouchableOpacity style={styles.coachBtn} onPress={handleMockCoach} activeOpacity={0.8}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={Colors.gold} />
-                <Text style={styles.coachBtnText}>Coach Sign In</Text>
+                <Text style={styles.coachBtnText}>Trener-innlogging</Text>
               </TouchableOpacity>
             </View>
           )}
 
           <Text style={styles.footer}>
-            By continuing you agree to our Terms of Service and Privacy Policy
+            Ved å fortsette godtar du våre Brukervilkår og Personvernregler
           </Text>
         </SafeAreaView>
       </View>

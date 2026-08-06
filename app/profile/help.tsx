@@ -14,37 +14,37 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const FAQ = [
   {
-    q: 'How do I log a completed workout?',
-    a: 'Open the workout from your Today or Plan tab, then tap "Log Workout" at the bottom. Fill in your actual distance, time and effort rating.',
+    q: 'Hvordan logger jeg en fullført økt?',
+    a: 'Åpne økten fra I dag- eller Plan-fanen, og trykk deretter på "Registrer løp" nederst. Fyll inn faktisk distanse, tid og anstrengelsesnivå.',
   },
   {
-    q: 'How do I message my coach?',
-    a: 'Go to the Chat tab at the bottom of the screen. All messages are visible to both you and your coach in real time.',
+    q: 'Hvordan sender jeg melding til treneren min?',
+    a: 'Gå til Chat-fanen nederst på skjermen. Alle meldinger er synlige for både deg og treneren din i sanntid.',
   },
   {
-    q: 'Why hasn\'t my coach assigned a plan yet?',
-    a: 'Your coach will assign a training plan after reviewing your profile and goals. If you haven\'t heard back within 48 hours, send them a message in the Chat tab.',
+    q: 'Hvorfor har ikke treneren min tildelt en plan ennå?',
+    a: 'Treneren din vil tildele en treningsplan etter å ha gjennomgått profilen og målene dine. Hvis du ikke hører noe innen 48 timer, send dem en melding i Chat-fanen.',
   },
   {
-    q: 'How are milestones tracked?',
-    a: 'Milestones are automatically unlocked as you hit training achievements — like completing your first week or logging 50km total. Your coach can also unlock them manually.',
+    q: 'Hvordan spores milepæler?',
+    a: 'Milepæler låses opp automatisk når du når treningsprestasjoner — som å fullføre din første uke eller logge 50 km totalt. Treneren din kan også låse dem opp manuelt.',
   },
   {
-    q: 'Can I change my training goal?',
-    a: 'Yes — go to Profile → Training Preferences and update your goal. Your coach will be notified of the change.',
+    q: 'Kan jeg endre treningsmålet mitt?',
+    a: 'Ja — gå til Profil → Treningspreferanser og oppdater målet ditt. Treneren din vil bli varslet om endringen.',
   },
   {
-    q: 'How do I integrate Garmin or Strava?',
-    a: 'Integrations are coming soon. Go to Profile → Integrations to see the connection status and get notified when they launch.',
+    q: 'Hvordan integrerer jeg Garmin eller Strava?',
+    a: 'Integrasjoner kommer snart. Gå til Profil → Integrasjoner for å se tilkoblingsstatus og bli varslet når de lanseres.',
   },
   {
-    q: 'Is my data secure?',
-    a: 'All data is encrypted in transit and stored securely on Supabase infrastructure. We never sell your personal data. See Privacy for full details.',
+    q: 'Er dataene mine sikre?',
+    a: 'All data er kryptert under overføring og lagres trygt på Supabase-infrastruktur. Vi selger aldri persondata. Se Personvern for fullstendige detaljer.',
   },
 ];
 
 const CONTACT_ITEMS = [
-  { icon: 'mail-outline', label: 'Email Support', value: 'support@lopeprat.com', color: Colors.primary, action: () => Linking.openURL('mailto:support@lopeprat.com') },
+  { icon: 'mail-outline', label: 'E-postsupport', value: 'support@lopeprat.com', color: Colors.primary, action: () => Linking.openURL('mailto:support@lopeprat.com') },
   { icon: 'logo-instagram', label: 'Instagram', value: '@lopeprat', color: Colors.purple, action: () => Linking.openURL('https://instagram.com/lopeprat') },
 ];
 
@@ -53,18 +53,18 @@ export default function HelpScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Help & Support" />
+      <ScreenHeader title="Hjelp og støtte" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* Search hint */}
         <View style={styles.searchHint}>
           <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
-          <Text style={styles.searchHintText}>Find answers to common questions below</Text>
+          <Text style={styles.searchHintText}>Finn svar på vanlige spørsmål nedenfor</Text>
         </View>
 
         {/* FAQ */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>FREQUENTLY ASKED</Text>
+          <Text style={styles.sectionTitle}>VANLIGE SPØRSMÅL</Text>
           <Card padding={0}>
             {FAQ.map((item, i) => (
               <View key={i}>
@@ -92,7 +92,7 @@ export default function HelpScreen() {
 
         {/* Contact */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>GET IN TOUCH</Text>
+          <Text style={styles.sectionTitle}>KOM I KONTAKT</Text>
           <Card padding={0}>
             {CONTACT_ITEMS.map((item, i) => (
               <TouchableOpacity
@@ -123,7 +123,7 @@ export default function HelpScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="bug-outline" size={18} color={Colors.error} />
-              <Text style={styles.reportText}>Report a Problem</Text>
+              <Text style={styles.reportText}>Rapporter et problem</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
             </TouchableOpacity>
           </Card>
@@ -133,7 +133,7 @@ export default function HelpScreen() {
         <View style={styles.appInfo}>
           <Text style={styles.appName}>Lopeprat Coaching</Text>
           <Text style={styles.appVersion}>Version 1.0.0 · SDK 54</Text>
-          <Text style={styles.appCopyright}>© 2026 Lopeprat. All rights reserved.</Text>
+          <Text style={styles.appCopyright}>© 2026 Lopeprat. Alle rettigheter forbeholdt.</Text>
         </View>
 
       </ScrollView>

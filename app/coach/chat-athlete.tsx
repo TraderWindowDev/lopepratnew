@@ -83,16 +83,16 @@ export default function CoachChatScreen() {
 
   const formatTime = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     const today = new Date();
     const diff = Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Yesterday';
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diff === 0) return 'I dag';
+    if (diff === 1) return 'I går';
+    return d.toLocaleDateString('nb-NO', { month: 'short', day: 'numeric' });
   };
 
   const renderItem = ({ item, index }: { item: typeof messages[0]; index: number }) => {
@@ -143,7 +143,7 @@ export default function CoachChatScreen() {
           )}
           <View>
             <Text style={styles.headerName}>{athlete?.name ?? 'Athlete'}</Text>
-            <Text style={styles.headerSub}>Athlete · Direct message</Text>
+            <Text style={styles.headerSub}>Utøver · Direktemelding</Text>
           </View>
         </View>
         <View style={{ width: 40 }} />
@@ -173,7 +173,7 @@ export default function CoachChatScreen() {
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Ionicons name="chatbubble-outline" size={40} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>No messages yet. Start the conversation!</Text>
+              <Text style={styles.emptyText}>Ingen meldinger ennå. Start samtalen!</Text>
             </View>
           }
         />
@@ -190,7 +190,7 @@ export default function CoachChatScreen() {
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder={`Message ${athlete?.name ?? 'athlete'}...`}
+          placeholder={`Melding til ${athlete?.name ?? 'utøver'}...`}
           placeholderTextColor={Colors.textMuted}
           multiline
           maxLength={500}

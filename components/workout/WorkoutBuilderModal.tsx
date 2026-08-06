@@ -1,16 +1,21 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   TouchableOpacity,
-  ScrollView,
   TextInput,
   Animated,
-  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// gesture-handler's ScrollView coordinates with PanGestureHandler so the
+// drag handle and the scroll don't fight each other — no Reanimated needed.
+import {
+  ScrollView as GHScrollView,
+  PanGestureHandler,
+  State as GestureState,
+} from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Font, Radius, Spacing } from '@/constants/theme';
 
@@ -44,34 +49,37 @@ export type StructuredWorkout = {
   activityType: ActivityType;
   runType?: RunType;
   name: string;
+  description?: string;   // trenerens notater — vises til utøveren
+  warmupValue?: string;   // varighet for oppvarming på intervallløp (e.g. "10:00")
+  cooldownValue?: string; // varighet for nedkjøling på intervallløp (e.g. "10:00")
   steps: WorkoutStep[];
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const ACTIVITY_TYPES: { value: ActivityType; label: string; icon: string; color: string }[] = [
-  { value: 'run',         label: 'Run',         icon: 'walk-outline',    color: Colors.gold },
-  { value: 'alternative', label: 'Alternative',  icon: 'bicycle-outline', color: '#4CAF50' },
-  { value: 'strength',    label: 'Strength',     icon: 'barbell-outline', color: '#9C27B0' },
-  { value: 'rest',        label: 'Rest',         icon: 'moon-outline',    color: Colors.textMuted },
+  { value: 'run',         label: 'Løp',       icon: 'walk-outline',    color: Colors.gold },
+  { value: 'alternative', label: 'Alternativ', icon: 'bicycle-outline', color: '#4CAF50' },
+  { value: 'strength',    label: 'Styrke',     icon: 'barbell-outline', color: '#9C27B0' },
+  { value: 'rest',        label: 'Hvile',      icon: 'moon-outline',    color: Colors.textMuted },
 ];
 
 const RUN_TYPES: { value: RunType; label: string }[] = [
-  { value: 'easy',     label: 'Easy Run' },
-  { value: 'interval', label: 'Interval' },
-  { value: 'long',     label: 'Long Run' },
+  { value: 'easy',     label: 'Lett løp' },
+  { value: 'interval', label: 'Intervall' },
+  { value: 'long',     label: 'Langkjøring' },
 ];
 
 const STEP_DEFS: { type: Exclude<StepType, 'interval'>; label: string; defaultTime: string; color: string; barFill: number }[] = [
-  { type: 'warmup',   label: 'Warm Up',   defaultTime: '10:00', color: '#7D6534', barFill: 0.4 },
-  { type: 'training', label: 'Training',  defaultTime: '20:00', color: '#1B5E20', barFill: 1.0 },
-  { type: 'rest',     label: 'Rest',      defaultTime: '02:00', color: '#424242', barFill: 0.15 },
-  { type: 'cooldown', label: 'Cool Down', defaultTime: '10:00', color: '#004D40', barFill: 0.4 },
+  { type: 'warmup',   label: 'Oppvarming', defaultTime: '10:00', color: '#7D6534', barFill: 0.4 },
+  { type: 'training', label: 'Trening',    defaultTime: '20:00', color: '#1B5E20', barFill: 1.0 },
+  { type: 'rest',     label: 'Hvile',      defaultTime: '02:00', color: '#424242', barFill: 0.15 },
+  { type: 'cooldown', label: 'Nedkjøling', defaultTime: '10:00', color: '#004D40', barFill: 0.4 },
 ];
 
 const ALL_STEP_DEFS: { type: StepType; label: string; defaultTime: string; color: string; barFill: number }[] = [
   ...STEP_DEFS,
-  { type: 'interval', label: 'Interval', defaultTime: '', color: '#1B5E20', barFill: 0.6 },
+  { type: 'interval', label: 'Intervall', defaultTime: '', color: '#1B5E20', barFill: 0.6 },
 ];
 
 const TIME_OPTIONS = [
@@ -83,9 +91,9 @@ const DIST_OPTIONS = ['0.5 km','1 km','2 km','3 km','4 km','5 km','8 km','10 km'
 
 const INTENSITY_KINDS: { value: IntensityKind; label: string }[] = [
   { value: 'pace',         label: 'Pace' },
-  { value: 'threshold_hr', label: '% Threshold HR' },
-  { value: 'power',        label: 'Power' },
-  { value: 'open',         label: 'Open (no target)' },
+  { value: 'threshold_hr', label: '% Terskel-HF' },
+  { value: 'power',        label: 'Watt' },
+  { value: 'open',         label: 'Åpen (intet mål)' },
 ];
 
 const INTENSITY_RANGES: Record<IntensityKind, string[]> = {
@@ -143,10 +151,12 @@ function reorderArr<T>(arr: T[], from: number, to: number): T[] {
 }
 
 // ── Drag-to-reorder (fixed-height items) ──────────────────────────────────
-// Uses PanResponder + RN Animated (no react-native-reanimated) to avoid
-// Exception in HostFunction when Reanimated initialises on first import.
+// Uses gesture-handler's PanGestureHandler (JS-thread callbacks, no Reanimated)
+// inside gesture-handler's GHScrollView so the two coordinate automatically —
+// the drag handle always wins over the scroll.
 
-/** Single draggable row — isActive/shiftAnim/dragPan come from DraggableStepList */
+/** Single draggable row. PanGestureHandler fires callbacks on the JS thread
+ *  so we can drive Animated.Value directly — no Reanimated import needed. */
 function DraggableRow({
   isActive, shiftAnim, dragPan, onDragStart, onDragMove, onDragEnd, itemHeight, children,
 }: {
@@ -159,20 +169,12 @@ function DraggableRow({
   itemHeight: number;
   children: React.ReactNode;
 }) {
-  // Keep callbacks in a ref so the PanResponder (created once) always sees latest
+  // Keep callbacks in a ref — PanGestureHandler re-reads on every call
   const cb = useRef({ onDragStart, onDragMove, onDragEnd });
   cb.current = { onDragStart, onDragMove, onDragEnd };
 
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant:    ()         => cb.current.onDragStart(),
-      onPanResponderMove:     (_, gs)    => cb.current.onDragMove(gs.dy),
-      onPanResponderRelease:  ()         => cb.current.onDragEnd(),
-      onPanResponderTerminate: ()        => cb.current.onDragEnd(),
-    })
-  ).current;
+  // Track whether this gesture has already called onDragStart
+  const started = useRef(false);
 
   const translateY = isActive ? dragPan : shiftAnim;
 
@@ -182,43 +184,66 @@ function DraggableRow({
       { height: itemHeight, transform: [{ translateY }] },
       isActive && { zIndex: 99, elevation: 10, shadowOpacity: 0.2, shadowRadius: 8 },
     ]}>
-      {/* Drag handle — only this area responds to the PanResponder */}
-      <View {...pan.panHandlers} style={s.dragHandle}>
-        <Ionicons name="menu-outline" size={18} color={Colors.textMuted} />
-      </View>
+      {/* PanGestureHandler wraps only the handle — JS-thread callbacks */}
+      <PanGestureHandler
+        activeOffsetY={[-4, 4]}
+        failOffsetX={[-20, 20]}
+        onGestureEvent={(e) => {
+          if (!started.current) {
+            started.current = true;
+            cb.current.onDragStart();
+          }
+          cb.current.onDragMove(e.nativeEvent.translationY);
+        }}
+        onHandlerStateChange={(e) => {
+          const st = e.nativeEvent.state;
+          if (
+            st === GestureState.END ||
+            st === GestureState.CANCELLED ||
+            st === GestureState.FAILED
+          ) {
+            started.current = false;
+            cb.current.onDragEnd();
+          }
+        }}
+      >
+        <View style={s.dragHandle}>
+          <Ionicons name="menu-outline" size={18} color={Colors.textMuted} />
+        </View>
+      </PanGestureHandler>
       <View style={s.draggableRowContent}>{children}</View>
     </Animated.View>
   );
 }
 
-/** Container that owns shared animation state for a fixed-height draggable list */
+/** Container that owns shared animation state for a fixed-height draggable list.
+ *  No setScrollEnabled needed — GHScrollView defers to PanGestureHandler
+ *  automatically when the drag handle is touched. */
 function DraggableStepList<T extends { id: string }>({
-  items, itemHeight, renderItem, onReorder, setScrollEnabled,
+  items, itemHeight, renderItem, onReorder,
 }: {
   items: T[];
   itemHeight: number;
   renderItem: (item: T) => React.ReactNode;
   onReorder: (from: number, to: number) => void;
-  setScrollEnabled: (v: boolean) => void;
 }) {
   const [activeIdx, setActiveIdx] = useState(-1);
 
-  // One Animated.Value per slot for the spring-shift of non-dragged items
+  // One Animated.Value per slot for spring-shifting non-dragged items
   const shiftAnims = useRef<Animated.Value[]>([]);
   while (shiftAnims.current.length < items.length) {
     shiftAnims.current.push(new Animated.Value(0));
   }
 
-  // The Y-translation of the currently dragged item
+  // Y-translation of the dragged item
   const dragPan = useRef(new Animated.Value(0)).current;
 
-  // Mutable refs so PanResponder callbacks don't capture stale state
+  // Mutable refs so gesture callbacks always read current values without stale closures
   const activeIdxRef  = useRef(-1);
   const targetIdxRef  = useRef(-1);
   const itemsLenRef   = useRef(items.length);
   itemsLenRef.current = items.length;
 
-  // Spring non-active items out of the way
   function updateShifts(fromIdx: number, toIdx: number) {
     shiftAnims.current.forEach((anim, i) => {
       if (i === fromIdx) return;
@@ -234,7 +259,6 @@ function DraggableStepList<T extends { id: string }>({
     targetIdxRef.current = idx;
     dragPan.setValue(0);
     setActiveIdx(idx);
-    setScrollEnabled(false);
   }
 
   function handleDragMove(idx: number, dy: number) {
@@ -257,12 +281,10 @@ function DraggableStepList<T extends { id: string }>({
     activeIdxRef.current = -1;
     targetIdxRef.current = -1;
 
-    // Reset all shift animations immediately (React will re-render with new order)
     shiftAnims.current.forEach((a) => a.setValue(0));
     dragPan.setValue(0);
-
     setActiveIdx(-1);
-    setScrollEnabled(true);
+
     if (to !== from) onReorder(from, to);
   }
 
@@ -297,7 +319,7 @@ function ActivityPickerScreen({ selected, onPick, onBack }: {
         <TouchableOpacity onPress={onBack} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Activity Type</Text>
+        <Text style={s.headerTitle}>Aktivitetstype</Text>
         <View style={{ width: 32 }} />
       </View>
       <View style={s.activityList}>
@@ -327,9 +349,9 @@ function ExercisePickerScreen({ onPick, onBack, allowInterval = true }: {
     <SafeAreaView style={s.screen}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} hitSlop={12}>
-          <Text style={s.cancelBtn}>Cancel</Text>
+          <Text style={s.cancelBtn}>Avbryt</Text>
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Add Step</Text>
+        <Text style={s.headerTitle}>Legg til steg</Text>
         <View style={{ width: 60 }} />
       </View>
       <View style={s.exerciseGrid}>
@@ -399,49 +421,50 @@ function StepEditorScreen({ step, onSave, onBack }: {
   return (
     <SafeAreaView style={s.screen}>
       <View style={s.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={12}><Text style={s.cancelBtn}>Cancel</Text></TouchableOpacity>
-        <Text style={s.headerTitle}>Edit Step</Text>
+        <TouchableOpacity onPress={onBack} hitSlop={12}><Text style={s.cancelBtn}>Avbryt</Text></TouchableOpacity>
+        <Text style={s.headerTitle}>Rediger steg</Text>
         <TouchableOpacity hitSlop={12} onPress={() =>
           onSave({ ...step, stepType, targetKind: isSimple ? 'time' : targetKind, targetValue, intensityKind, intensityRange })
         }>
-          <Text style={s.saveActionBtn}>Save</Text>
+          <Text style={s.saveActionBtn}>Lagre</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <GHScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={s.editorSection}>
           <DropdownRow
             label="Type" value={STEP_DEFS.find((d) => d.type === stepType)?.label ?? stepType}
             options={STEP_DEFS.map((d) => d.label)} open={openDrop === 'type'} onToggle={() => toggle('type')}
             onSelect={(v) => { const f = STEP_DEFS.find((d) => d.label === v); if (f) setStepType(f.type); }}
           />
+
         </View>
 
         <View style={s.editorSection}>
           <DropdownRow
-            label="Duration" value={targetValue}
+            label="Varighet" value={targetValue}
             options={TIME_OPTIONS}
             open={openDrop === 'targetValue'} onToggle={() => toggle('targetValue')}
             onSelect={setTargetValue}
           />
         </View>
 
-        {/* Warmup / cooldown: time only, no target-type or intensity pickers */}
+        {/* Oppvarming / nedkjøling: bare tid, ingen måltype eller intensitet */}
         {!isSimple && (
           <>
             <View style={s.editorSection}>
               <DropdownRow
-                label="Target type" value={targetKind === 'time' ? 'Time' : 'Distance'}
-                options={['Time', 'Distance']} open={openDrop === 'targetKind'} onToggle={() => toggle('targetKind')}
+                label="Måltype" value={targetKind === 'time' ? 'Tid' : 'Distanse'}
+                options={['Tid', 'Distanse']} open={openDrop === 'targetKind'} onToggle={() => toggle('targetKind')}
                 onSelect={(v) => {
-                  const kind: TargetKind = v === 'Time' ? 'time' : 'distance';
+                  const kind: TargetKind = v === 'Tid' ? 'time' : 'distance';
                   setTargetKind(kind);
                   setTargetValue(kind === 'time' ? '20:00' : '5 km');
                 }}
               />
               {targetKind === 'distance' && (
                 <DropdownRow
-                  label="Distance" value={targetValue} options={DIST_OPTIONS}
+                  label="Distanse" value={targetValue} options={DIST_OPTIONS}
                   open={openDrop === 'distValue'} onToggle={() => toggle('distValue')}
                   onSelect={setTargetValue}
                 />
@@ -449,7 +472,7 @@ function StepEditorScreen({ step, onSave, onBack }: {
             </View>
             <View style={s.editorSection}>
               <DropdownRow
-                label="Intensity"
+                label="Intensitet"
                 value={INTENSITY_KINDS.find((k) => k.value === intensityKind)?.label ?? intensityKind}
                 options={INTENSITY_KINDS.map((k) => k.label)} open={openDrop === 'intensityKind'} onToggle={() => toggle('intensityKind')}
                 onSelect={(v) => {
@@ -459,7 +482,7 @@ function StepEditorScreen({ step, onSave, onBack }: {
               />
               {intensityKind !== 'open' && (
                 <DropdownRow
-                  label="Range" value={intensityRange} options={INTENSITY_RANGES[intensityKind]}
+                  label="Område" value={intensityRange} options={INTENSITY_RANGES[intensityKind]}
                   open={openDrop === 'intensityRange'} onToggle={() => toggle('intensityRange')}
                   onSelect={setIntensityRange}
                 />
@@ -467,7 +490,7 @@ function StepEditorScreen({ step, onSave, onBack }: {
             </View>
           </>
         )}
-      </ScrollView>
+      </GHScrollView>
     </SafeAreaView>
   );
 }
@@ -476,7 +499,7 @@ function StepEditorScreen({ step, onSave, onBack }: {
 
 function IntervalBlock({
   step, index, total, onChange, onDelete, onMoveUp, onMoveDown,
-  onEditSubStep, onAddSubStep, setScrollEnabled,
+  onEditSubStep, onAddSubStep,
 }: {
   step: IntervalStep;
   index: number;
@@ -487,7 +510,6 @@ function IntervalBlock({
   onMoveDown: () => void;
   onEditSubStep: (sub: BaseStep) => void;
   onAddSubStep: () => void;
-  setScrollEnabled: (v: boolean) => void;
 }) {
   function setRepeat(delta: number) {
     onChange({ ...step, repeatCount: Math.max(1, Math.min(99, step.repeatCount + delta)) });
@@ -504,7 +526,7 @@ function IntervalBlock({
         <TouchableOpacity onPress={() => setRepeat(-1)} style={s.intervalRepeatBtn} hitSlop={10}>
           <Ionicons name="remove" size={18} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={s.intervalRepeatLabel}>Repeat  {step.repeatCount}×</Text>
+        <Text style={s.intervalRepeatLabel}>Gjenta  {step.repeatCount}×</Text>
         <TouchableOpacity onPress={() => setRepeat(1)} style={s.intervalRepeatBtn} hitSlop={10}>
           <Ionicons name="add" size={18} color={Colors.text} />
         </TouchableOpacity>
@@ -539,7 +561,6 @@ function IntervalBlock({
         items={step.subSteps}
         itemHeight={SUBSTEP_H}
         onReorder={reorderSubSteps}
-        setScrollEnabled={setScrollEnabled}
         renderItem={(sub) => (
           <TouchableOpacity style={s.subStepInner} onPress={() => onEditSubStep(sub)} activeOpacity={0.75}>
             <View style={[s.subStepAccent, { backgroundColor: stepColor(sub.stepType) }]} />
@@ -557,7 +578,7 @@ function IntervalBlock({
 
       <TouchableOpacity style={s.subStepAdd} onPress={onAddSubStep}>
         <Ionicons name="add" size={16} color={Colors.primary} />
-        <Text style={s.subStepAddText}>Add step</Text>
+        <Text style={s.subStepAddText}>Legg til steg</Text>
       </TouchableOpacity>
     </View>
   );
@@ -579,8 +600,6 @@ function BuilderScreen({
   onEditStep: (step: BaseStep) => void;
   onEditSubStep: (intervalId: string, sub: BaseStep) => void;
 }) {
-  const [scrollEnabled, setScrollEnabled] = useState(true);
-
   const activity   = ACTIVITY_TYPES.find((a) => a.value === workout.activityType);
   const runType    = workout.runType ?? 'easy';
   const isSimpleRun = workout.activityType === 'run' && (runType === 'easy' || runType === 'long');
@@ -591,6 +610,9 @@ function BuilderScreen({
     ? targetValueToMins((workout.steps[0] as BaseStep).targetValue)
     : '';
 
+  const warmupMins = workout.warmupValue ? targetValueToMins(workout.warmupValue) : '10';
+  const cooldownMins = workout.cooldownValue ? targetValueToMins(workout.cooldownValue) : '10';
+
   function setSimpleMinutes(raw: string) {
     if (!raw) { onChange({ ...workout, steps: [] }); return; }
     const step = makeBaseStep('training');
@@ -598,8 +620,22 @@ function BuilderScreen({
     onChange({ ...workout, steps: [step] });
   }
 
+  function setWarmupMins(raw: string) {
+    onChange({ ...workout, warmupValue: raw ? minsToTargetValue(raw) : '10:00' });
+  }
+
+  function setCooldownMins(raw: string) {
+    onChange({ ...workout, cooldownValue: raw ? minsToTargetValue(raw) : '10:00' });
+  }
+
   function setRunType(rt: RunType) {
-    onChange({ ...workout, runType: rt, steps: [] });
+    onChange({
+      ...workout,
+      runType: rt,
+      steps: [],
+      warmupValue: rt === 'interval' ? (workout.warmupValue ?? '10:00') : undefined,
+      cooldownValue: rt === 'interval' ? (workout.cooldownValue ?? '10:00') : undefined,
+    });
   }
 
   function removeStep(id: string) {
@@ -623,19 +659,18 @@ function BuilderScreen({
   return (
     <SafeAreaView style={s.screen}>
       <View style={s.header}>
-        <TouchableOpacity onPress={onDismiss} hitSlop={12}><Text style={s.cancelBtn}>Cancel</Text></TouchableOpacity>
+        <TouchableOpacity onPress={onDismiss} hitSlop={12}><Text style={s.cancelBtn}>Avbryt</Text></TouchableOpacity>
         <Text style={s.headerTitle}>
-          {workout.activityType === 'rest' ? 'Rest Day' : 'Create Workout'}
+          {workout.activityType === 'rest' ? 'Hviledag' : 'Opprett økt'}
         </Text>
         <TouchableOpacity onPress={onSave} hitSlop={12}>
           <Text style={[s.saveActionBtn, !workout.name.trim() && workout.activityType !== 'rest' && s.saveActionBtnDisabled]}>
-            Save
+            Lagre
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        scrollEnabled={scrollEnabled}
+      <GHScrollView
         contentContainerStyle={s.builderScroll}
         keyboardShouldPersistTaps="handled"
       >
@@ -651,21 +686,32 @@ function BuilderScreen({
         {workout.activityType === 'rest' ? (
           <View style={s.restNote}>
             <Ionicons name="moon-outline" size={32} color={Colors.textMuted} />
-            <Text style={s.restNoteText}>Rest day — no workout scheduled</Text>
+            <Text style={s.restNoteText}>Hviledag – ingen økt planlagt</Text>
           </View>
         ) : (
           <>
-            {/* Workout name */}
+            {/* Økt-navn */}
             <TextInput
               style={s.nameInput}
               value={workout.name}
               onChangeText={(v) => onChange({ ...workout, name: v })}
-              placeholder="Workout name"
+              placeholder="Økt-navn"
               placeholderTextColor={Colors.textMuted}
               autoFocus={workout.name === ''}
             />
 
-            {/* Run type chips */}
+            {/* Trenernotater */}
+            <TextInput
+              style={s.descriptionInput}
+              value={workout.description ?? ''}
+              onChangeText={(v) => onChange({ ...workout, description: v || undefined })}
+              placeholder="Notater til utøveren (valgfritt)"
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              numberOfLines={3}
+            />
+
+            {/* Løpetype-chips */}
             {workout.activityType === 'run' && (
               <View style={s.runTypeRow}>
                 {RUN_TYPES.map((rt) => (
@@ -682,10 +728,10 @@ function BuilderScreen({
               </View>
             )}
 
-            {/* Easy / Long Run: minutes input only */}
+            {/* Lett løp / Langkjøring: minutter-input */}
             {isSimpleRun && (
               <View style={s.minutesBlock}>
-                <Text style={s.minutesLabel}>Duration</Text>
+                <Text style={s.minutesLabel}>Varighet</Text>
                 <View style={s.minutesInputRow}>
                   <TextInput
                     style={s.minutesInput}
@@ -701,9 +747,36 @@ function BuilderScreen({
               </View>
             )}
 
-            {/* Interval run: interval blocks with ↑↓ reorder */}
+            {/* Intervallløp: Oppvarming → intervallblokker → Nedkjøling */}
             {isIntervalRun && (
               <>
+                {/* Oppvarming */}
+                <View style={s.phaseSection}>
+                  <View style={s.phaseSectionHeader}>
+                    <View style={[s.phaseDot, { backgroundColor: '#7D6534' }]} />
+                    <Text style={s.phaseSectionLabel}>Oppvarming</Text>
+                  </View>
+                  <View style={s.phaseMinutesRow}>
+                    <TextInput
+                      style={s.phaseMinutesInput}
+                      value={warmupMins}
+                      onChangeText={setWarmupMins}
+                      keyboardType="numeric"
+                      placeholder="10"
+                      placeholderTextColor={Colors.textMuted}
+                      maxLength={3}
+                    />
+                    <Text style={s.phaseMinutesSuffix}>min</Text>
+                  </View>
+                </View>
+
+                {/* Intervalldrag */}
+                <View style={s.phaseSection}>
+                  <View style={s.phaseSectionHeader}>
+                    <View style={[s.phaseDot, { backgroundColor: Colors.interval ?? '#FF6B35' }]} />
+                    <Text style={s.phaseSectionLabel}>Intervalldrag</Text>
+                  </View>
+                </View>
                 {intervalSteps.map((step, i) => (
                   <IntervalBlock
                     key={step.id}
@@ -716,7 +789,6 @@ function BuilderScreen({
                     onMoveDown={() => reorderIntervals(i, i + 1)}
                     onEditSubStep={(sub) => onEditSubStep(step.id, sub)}
                     onAddSubStep={() => onAddSubStep(step.id)}
-                    setScrollEnabled={setScrollEnabled}
                   />
                 ))}
                 <TouchableOpacity
@@ -724,25 +796,44 @@ function BuilderScreen({
                   onPress={() => onChange({ ...workout, steps: [...workout.steps, makeIntervalStep()] })}
                 >
                   <Ionicons name="add" size={18} color={Colors.primary} />
-                  <Text style={s.addExerciseBtnText}>Add Interval</Text>
+                  <Text style={s.addExerciseBtnText}>Legg til intervall</Text>
                 </TouchableOpacity>
+
+                {/* Nedkjøling */}
+                <View style={s.phaseSection}>
+                  <View style={s.phaseSectionHeader}>
+                    <View style={[s.phaseDot, { backgroundColor: '#004D40' }]} />
+                    <Text style={s.phaseSectionLabel}>Nedkjøling</Text>
+                  </View>
+                  <View style={s.phaseMinutesRow}>
+                    <TextInput
+                      style={s.phaseMinutesInput}
+                      value={cooldownMins}
+                      onChangeText={setCooldownMins}
+                      keyboardType="numeric"
+                      placeholder="10"
+                      placeholderTextColor={Colors.textMuted}
+                      maxLength={3}
+                    />
+                    <Text style={s.phaseMinutesSuffix}>min</Text>
+                  </View>
+                </View>
               </>
             )}
 
-            {/* Strength / Alternative: draggable step cards */}
+            {/* Styrke / Alternativ: dra-og-slipp stegkort */}
             {isStepBased && (
               <>
                 {workout.steps.length > 0 && (
                   <View style={s.stepListHint}>
                     <Ionicons name="menu-outline" size={13} color={Colors.textMuted} />
-                    <Text style={s.stepListHintText}>Hold & drag to reorder</Text>
+                    <Text style={s.stepListHintText}>Hold og dra for å sortere</Text>
                   </View>
                 )}
                 <DraggableStepList
                   items={workout.steps as BaseStep[]}
                   itemHeight={MAINSTEP_H}
                   onReorder={reorderMainSteps}
-                  setScrollEnabled={setScrollEnabled}
                   renderItem={(step) => {
                     const def = STEP_DEFS.find((d) => d.type === (step as BaseStep).stepType);
                     return (
@@ -770,13 +861,13 @@ function BuilderScreen({
                 />
                 <TouchableOpacity style={s.addExerciseBtn} onPress={onAddStep}>
                   <Ionicons name="add" size={18} color={Colors.primary} />
-                  <Text style={s.addExerciseBtnText}>Add Step</Text>
+                  <Text style={s.addExerciseBtnText}>Legg til steg</Text>
                 </TouchableOpacity>
               </>
             )}
           </>
         )}
-      </ScrollView>
+      </GHScrollView>
     </SafeAreaView>
   );
 }
@@ -804,7 +895,7 @@ export function WorkoutBuilderModal({ visible, initial, onSave, onDismiss }: {
 
   React.useEffect(() => {
     if (visible) {
-      setWorkout(initial ?? { activityType: 'run', runType: 'easy', name: '', steps: [] });
+      setWorkout(initial ?? { activityType: 'run', runType: 'easy', name: '', warmupValue: '10:00', cooldownValue: '10:00', steps: [] });
       setScreen('builder');
       setEditTarget(null);
       setAddingSubId(null);
@@ -970,6 +1061,42 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 16,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
+  descriptionInput: {
+    ...Font.body, color: Colors.text,
+    paddingHorizontal: Spacing.md, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    textAlignVertical: 'top',
+    minHeight: 72,
+  },
+
+  // Phase sections (Oppvarming / Nedkjøling for interval)
+  phaseSection: {
+    marginHorizontal: Spacing.md,
+    marginTop: 16,
+  },
+  phaseSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  phaseDot: {
+    width: 8, height: 8, borderRadius: 4,
+  },
+  phaseSectionLabel: {
+    ...Font.label, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8,
+  },
+  phaseMinutesRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  phaseMinutesInput: {
+    ...Font.h3, color: Colors.text,
+    minWidth: 56, textAlign: 'center',
+  },
+  phaseMinutesSuffix: { ...Font.body, color: Colors.textSecondary },
 
   // Run type chips
   runTypeRow: {

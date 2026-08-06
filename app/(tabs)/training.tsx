@@ -5,8 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '@/hooks/useStore';
@@ -16,8 +16,8 @@ import { swTotalMinutes } from '@/lib/api/athletes';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
-const DAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS_FULL = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+const DAYS_SHORT = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
 
 function parseIntervalNotes(notes: string) {
   const m = notes.match(/^(\d+)\s*[×x]\s*([\d.]+\s*(?:km|m))\s*@\s*([^·]+?)(?:\s*·\s*(.+))?$/i);
@@ -87,7 +87,7 @@ export default function TrainingScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.eyebrow}>TRAINING PLAN</Text>
+              <Text style={styles.eyebrow}>TRENINGSPLAN</Text>
               <Text style={styles.title}>{planWeek?.phase ?? weekPlan.phase}</Text>
               {focusLabel && <Text style={styles.focus}>{focusLabel}</Text>}
             </View>
@@ -96,7 +96,7 @@ export default function TrainingScreen() {
                 {isTimeBased ? `~${totalPlannedMinutes}` : totalKm}
               </Text>
               <Text style={styles.weekKmLabel}>
-                {isTimeBased ? 'min planned' : 'km planned'}
+                {isTimeBased ? 'min planlagt' : 'km planlagt'}
               </Text>
             </View>
           </View>
@@ -116,7 +116,7 @@ export default function TrainingScreen() {
                 <Text style={styles.weekNavLabel}>{weekLabel}</Text>
                 {isCurrentWeek && !planNotStarted && (
                   <View style={styles.currentWeekPill}>
-                    <Text style={styles.currentWeekPillText}>CURRENT</Text>
+                    <Text style={styles.currentWeekPillText}>NÅVÆRENDE</Text>
                   </View>
                 )}
               </View>
@@ -136,10 +136,10 @@ export default function TrainingScreen() {
             <Card style={styles.notStartedCard} padding={20}>
               <Ionicons name="time-outline" size={32} color={Colors.primary} style={{ alignSelf: 'center', marginBottom: 10 }} />
               <Text style={styles.notStartedTitle}>
-                Plan starting in {daysUntilStart} {daysUntilStart === 1 ? 'day' : 'days'}
+                Planen starter om {daysUntilStart} {daysUntilStart === 1 ? 'dag' : 'dager'}
               </Text>
               <Text style={styles.notStartedSub}>
-                {planStartDate!.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {planStartDate!.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })}
               </Text>
             </Card>
           )}
@@ -149,7 +149,7 @@ export default function TrainingScreen() {
             <Card style={styles.progressCard} padding={16}>
               <View style={styles.progressRow}>
                 <Text style={styles.progressLabel}>
-                  {isTimeBased ? 'Weekly time' : 'Weekly volume'}
+                  {isTimeBased ? 'Ukentlig tid' : 'Ukentlig volum'}
                 </Text>
                 <Text style={styles.progressValue}>
                   {isTimeBased
@@ -170,7 +170,7 @@ export default function TrainingScreen() {
                 />
               </View>
               <Text style={styles.sessionCountText}>
-                {weekPlan.workouts.filter((w) => w.completed).length} of {weekPlan.workouts.length} sessions complete
+                {weekPlan.workouts.filter((w) => w.completed).length} av {weekPlan.workouts.length} økter fullført
               </Text>
             </Card>
           )}
@@ -199,7 +199,7 @@ export default function TrainingScreen() {
                     </View>
                     <Text style={[styles.daySelectorType, { color }]}>
                       {w.type === 'rest'
-                        ? 'Rest'
+                        ? 'Hvile'
                         : w.targetDistance
                           ? `${w.targetDistance}km`
                           : w.targetDuration
@@ -229,7 +229,7 @@ export default function TrainingScreen() {
                     <View style={[styles.daySelectorDot, { borderColor: color }]} />
                     <Text style={[styles.daySelectorType, { color }]}>
                       {d.type === 'rest'
-                        ? 'Rest'
+                        ? 'Hvile'
                         : d.km
                           ? `${d.km}km`
                           : d.structuredWorkout
@@ -246,13 +246,13 @@ export default function TrainingScreen() {
           {planComplete && viewingWeekIdx >= assignedPlan!.totalWeeks && (
             <View style={styles.completeCard}>
               <Ionicons name="trophy" size={40} color={Colors.gold} />
-              <Text style={styles.completeTitle}>Plan Complete!</Text>
+              <Text style={styles.completeTitle}>Plan fullført!</Text>
               <Text style={styles.completeSub}>
-                You finished all {assignedPlan!.totalWeeks} weeks of{'\n'}
+                Du fullførte alle {assignedPlan!.totalWeeks} uker av{'\n'}
                 <Text style={{ color: Colors.text }}>{assignedPlan!.name}</Text>.
               </Text>
               <Text style={styles.completeHint}>
-                Your coach will assign your next plan. Browse past weeks using the arrows above.
+                Treneren din vil tildele neste plan. Bla gjennom tidligere uker med pilene ovenfor.
               </Text>
             </View>
           )}
@@ -277,7 +277,7 @@ export default function TrainingScreen() {
                           <Text style={styles.rowDay}>{DAYS_FULL[i]}</Text>
                           {isToday && (
                             <View style={styles.todayBadge}>
-                              <Text style={styles.todayBadgeText}>TODAY</Text>
+                              <Text style={styles.todayBadgeText}>I DAG</Text>
                             </View>
                           )}
                           {w.completed && (
@@ -355,6 +355,14 @@ export default function TrainingScreen() {
                           }
                           return <Text style={styles.planNotes}>{d.notes}</Text>;
                         })()}
+                        {d.structuredWorkout?.description && (
+                          <View style={styles.coachNoteRow}>
+                            <Ionicons name="chatbubble-outline" size={12} color={Colors.primary} />
+                            <Text style={styles.coachNoteText} numberOfLines={3}>
+                              {d.structuredWorkout.description}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                       <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} style={{ alignSelf: 'center', marginRight: 12 }} />
                     </TouchableOpacity>
@@ -430,7 +438,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     minWidth: 56,
   },
-  dayTodayBorder: { borderColor: Colors.primary + '66' },
+  dayTodayBorder: { borderColor: Colors.primary, borderWidth: 2, backgroundColor: Colors.primaryFade },
   daySelectorShort: { ...Font.label, color: Colors.textMuted },
   daySelectorDot: {
     width: 22,
@@ -466,18 +474,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     overflow: 'hidden',
   },
-  workoutRowToday: { borderColor: Colors.primary + '66' },
+  workoutRowToday: { borderColor: Colors.primary, borderWidth: 2, backgroundColor: Colors.primaryFade + '30' },
   rowAccent: { width: 4 },
   rowContent: { flex: 1, padding: 14 },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   rowDay: { ...Font.label, color: Colors.textMuted },
   todayBadge: {
-    backgroundColor: Colors.primaryFade,
+    backgroundColor: Colors.primary,
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  todayBadgeText: { ...Font.tiny, color: Colors.primary },
+  todayBadgeText: { ...Font.tiny, color: '#fff', fontWeight: '700', letterSpacing: 0.5 },
   rowTitle: { ...Font.h4, color: Colors.text, marginBottom: 2 },
   rowSub: { ...Font.small, color: Colors.textSecondary, marginBottom: 10 },
   rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
@@ -494,6 +502,11 @@ const styles = StyleSheet.create({
   },
   actualText: { ...Font.tiny, color: Colors.success },
   planNotes: { ...Font.tiny, color: Colors.textSecondary, marginTop: 6, fontStyle: 'italic' },
+  coachNoteRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8,
+    backgroundColor: Colors.primaryFade, borderRadius: Radius.sm, padding: 8,
+  },
+  coachNoteText: { ...Font.tiny, color: Colors.textSecondary, flex: 1, lineHeight: 16 },
 
   intervalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   intervalChip: {
